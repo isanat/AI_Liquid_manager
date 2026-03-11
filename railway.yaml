@@ -1,0 +1,65 @@
+# Railway Configuration
+# This file defines all services for the AI Liquidity Manager
+
+services:
+  # ============================================
+  # Frontend - Next.js Dashboard
+  # ============================================
+  frontend:
+    source:
+      repo: isanat/AI_Liquid_manager
+      branch: main
+    build:
+      builder: NIXPACKS
+      buildCommand: bun install && bun run build
+    deploy:
+      startCommand: bun run start
+      healthcheckPath: /
+      healthcheckTimeout: 300
+    variables:
+      AI_ENGINE_URL: ${{ai-engine.RAILWAY_PUBLIC_DOMAIN}}
+      DATABASE_URL: ${{postgres.DATABASE_URL}}
+      REDIS_URL: ${{redis.REDIS_URL}}
+
+  # ============================================
+  # AI Engine - Python FastAPI
+  # ============================================
+  ai-engine:
+    source:
+      repo: isanat/AI_Liquid_manager
+      branch: main
+    build:
+      builder: NIXPACKS
+      buildCommand: pip install -r ai-engine/requirements.txt
+    deploy:
+      startCommand: python -m uvicorn ai-engine.api.main:app --host 0.0.0.0 --port $PORT
+      healthcheckPath: /health
+      healthcheckTimeout: 300
+    variables:
+      MODEL_PATH: /app/models/saved
+      DATABASE_URL: ${{postgres.DATABASE_URL}}
+      REDIS_URL: ${{redis.REDIS_URL}}
+
+  # ============================================
+  # Database - PostgreSQL
+  # ============================================
+  postgres:
+    image: postgres:15-alpine
+    variables:
+      POSTGRES_USER: liquidity
+      POSTGRES_PASSWORD: ${{generate(32)}}
+      POSTGRES_DB: liquidity_manager
+    storage:
+      name: postgres-data
+      mount: /var/lib/postgresql/data
+
+  # ============================================
+  # Cache - Redis
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    variables:
+      REDIS_PASSWORD: ${{generate(32)}}
+    storage:
+      name: redis-data
+      mount: /data

@@ -1,0 +1,93 @@
+services:
+  # ===========================================
+  # Next.js Frontend Dashboard
+  # ===========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - AI_ENGINE_URL=http://ai-engine:8000
+      - NODE_ENV=production
+    depends_on:
+      ai-engine:
+        condition: service_healthy
+    networks:
+      - liquidity-network
+    restart: unless-stopped
+
+  # ===========================================
+  # Python AI Engine
+  # ===========================================
+  ai-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.ai
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - PYTHONUNBUFFERED=1
+      - MODEL_PATH=/app/models/saved
+    volumes:
+      - ai-models:/app/models
+    networks:
+      - liquidity-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # ===========================================
+  # Redis Cache
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - liquidity-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=liquidity
+      - POSTGRES_PASSWORD=liquidity_secret
+      - POSTGRES_DB=liquidity_manager
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - liquidity-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U liquidity -d liquidity_manager"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  liquidity-network:
+    driver: bridge
+
+volumes:
+  ai-models:
+  redis-data:
+  postgres-data:
