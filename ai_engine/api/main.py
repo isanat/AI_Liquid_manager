@@ -49,8 +49,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,  # Cannot be True with wildcard origins
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -227,7 +227,7 @@ async def list_pools():
 async def inference(data: MarketDataInput):
     """Run inference on caller-supplied market data."""
     try:
-        logger.info("Inference", price=data.price, vol24h=data.volume_24h)
+        logger.info(f"Inference price={data.price} vol24h={data.volume_24h}")
         if _strategy_model and _strategy_model.is_trained:
             from features.feature_engineering import FeatureEngineer
             fe = FeatureEngineer()
@@ -264,7 +264,7 @@ async def inference(data: MarketDataInput):
             )
         return _rule_based(data)
     except Exception as e:
-        logger.error("Inference error", error=str(e))
+        logger.error(f"Inference error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -277,7 +277,7 @@ async def inference_for_pool(pool_address: str):
     try:
         from data.graph_client import KNOWN_POOLS
         resolved = KNOWN_POOLS.get(pool_address, pool_address)
-        logger.info("Live pool inference", pool=resolved)
+        logger.info(f"Live pool inference pool={resolved}")
 
         from features.feature_engineering import DataFetcher
         fetcher = DataFetcher()
@@ -312,7 +312,7 @@ async def inference_for_pool(pool_address: str):
         return _rule_based(data)
 
     except Exception as e:
-        logger.error("Pool inference error", pool=pool_address, error=str(e))
+        logger.error(f"Pool inference error pool={pool_address}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -332,7 +332,7 @@ async def run_backtest(config: BacktestConfig):
     if config.pool_address:
         from data.graph_client import fetch_pool_day_data, KNOWN_POOLS
         resolved = KNOWN_POOLS.get(config.pool_address, config.pool_address)
-        logger.info("Backtest with real data", pool=resolved, days=config.days)
+        logger.info(f"Backtest with real data pool={resolved} days={config.days}")
         rows = await fetch_pool_day_data(resolved, days=config.days)
 
         if rows:
@@ -396,7 +396,7 @@ async def train_model(config: TrainConfig):
     from data.graph_client import fetch_pool_day_data, DEFAULT_POOL, KNOWN_POOLS
 
     pool = KNOWN_POOLS.get(config.pool_address or "", config.pool_address or DEFAULT_POOL)
-    logger.info("Training model", pool=pool, days=config.days)
+    logger.info(f"Training model pool={pool} days={config.days}")
 
     rows = await fetch_pool_day_data(pool, days=config.days)
     data_source = "synthetic"
@@ -417,7 +417,7 @@ async def train_model(config: TrainConfig):
         if records:
             df = pd.DataFrame(records)
             data_source = "the-graph"
-            logger.info("Real data loaded for training", rows=len(df))
+            logger.info(f"Real data loaded for training rows={len(df)}")
         else:
             rows = []
 
@@ -488,7 +488,7 @@ async def train_model(config: TrainConfig):
     try:
         metrics = model.train(X, y_range, y_alloc, y_regime)
     except Exception as e:
-        logger.error("Training failed", error=str(e))
+        logger.error(f"Training failed: {e}")
         raise HTTPException(status_code=500, detail=f"Training failed: {e}")
 
     save_path = Path(__file__).parent.parent / "models" / "saved"
@@ -496,7 +496,7 @@ async def train_model(config: TrainConfig):
     _strategy_model = model
     _model_version = f"lgbm-v1-{data_source}"
 
-    logger.info("Training complete", metrics=metrics, samples=len(X_rows))
+    logger.info(f"Training complete samples={len(X_rows)} metrics={metrics}")
     return {
         "success": True,
         "message": f"Trained on {len(X_rows)} samples from {data_source}",
@@ -552,12 +552,12 @@ async def _startup():
             model.load(save_path)
             _strategy_model = model
             _model_version = "lgbm-v1-loaded"
-            logger.info("Loaded saved model", path=str(save_path))
+            logger.info(f"Loaded saved model path={save_path}")
         except Exception as e:
-            logger.info("No saved model, using rule-based fallback", reason=str(e))
+            logger.info(f"No saved model, using rule-based fallback: {e}")
 
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
-    logger.info("Starting AI Liquidity Manager", port=port)
+    logger.info(f"Starting AI Liquidity Manager port={port}")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
