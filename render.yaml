@@ -1,0 +1,69 @@
+# Render Configuration
+# https://render.com/docs/blueprint-spec
+
+services:
+  # ============================================
+  # AI Engine - Python FastAPI
+  # ============================================
+  - type: web
+    name: ai-liquidity-engine
+    env: python
+    region: oregon # or oregon, frankfurt, singapore
+    plan: free
+    buildCommand: pip install -r ai_engine/requirements.txt
+    startCommand: python -m uvicorn ai_engine.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+
+  # ============================================
+  # Frontend - Next.js
+  # ============================================
+  - type: web
+    name: ai-liquidity-frontend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: bun install && bun run build
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: AI_ENGINE_URL
+        fromService:
+          name: ai-liquidity-engine
+          type: web
+          property: url
+
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  - type: pserv
+    name: liquidity-db
+    env: docker
+    region: oregon
+    plan: free
+    envVars:
+      - key: POSTGRES_USER
+        value: liquidity
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+      - key: POSTGRES_DB
+        value: liquidity_manager
+
+  # ============================================
+  # Redis Cache
+  # ============================================
+  - type: pserv
+    name: liquidity-redis
+    env: docker
+    region: oregon
+    plan: free
+    envVars:
+      - key: REDIS_PASSWORD
+        generateValue: true
