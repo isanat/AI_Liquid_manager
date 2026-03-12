@@ -469,7 +469,7 @@ async def train_model(config: TrainConfig):
             MarketRegime.HIGH_VOL: 2,
             MarketRegime.LOW_VOL: 3,
         }
-        y_regime_rows.append(regime_map[rb.detected_regime])
+        y_regime_rows.append(int(regime_map.get(rb.detected_regime, 1)))
 
     if len(X_rows) < 20:
         return {
@@ -480,9 +480,10 @@ async def train_model(config: TrainConfig):
 
     import numpy as np
     X = np.array(X_rows)
-    y_range = np.array(y_range_rows)
-    y_alloc = np.array(y_alloc_rows)
-    y_regime = np.array(y_regime_rows)
+    y_range = np.array(y_range_rows, dtype=np.float64)
+    y_alloc = np.array(y_alloc_rows, dtype=np.float64)
+    y_regime = np.array(y_regime_rows, dtype=np.int32)
+    y_regime = np.clip(y_regime, 0, 3)  # Ensure valid labels
 
     model = LiquidityStrategyModel()
     try:
