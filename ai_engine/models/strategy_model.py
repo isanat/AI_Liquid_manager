@@ -85,7 +85,9 @@ class LiquidityStrategyModel:
     def __init__(self, config: Optional[ModelConfig] = None):
         self.config = config or ModelConfig()
         self.range_model: Optional[lgb.LGBMRegressor] = None
-        self.allocation_model: Optional[lgb.LGBMRegressor] = None
+        self.alloc_core_model: Optional[lgb.LGBMRegressor] = None
+        self.alloc_def_model: Optional[lgb.LGBMRegressor] = None
+        self.alloc_opp_model: Optional[lgb.LGBMRegressor] = None
         self.regime_model: Optional[lgb.LGBMClassifier] = None
         self.scaler = StandardScaler()
         self.feature_importance: Dict[str, float] = {}
@@ -170,27 +172,33 @@ class LiquidityStrategyModel:
         
         # Initialize models
         self.range_model = self._create_range_model()
-        self.allocation_model = self._create_allocation_model()
+        self.alloc_core_model = self._create_allocation_model()
+        self.alloc_def_model = self._create_allocation_model()
+        self.alloc_opp_model = self._create_allocation_model()
         self.regime_model = self._create_regime_model()
-        
+
+        # Split allocation targets into 3 separate 1D arrays
+        y_alloc_core = y_allocation[:, 0]
+        y_alloc_def = y_allocation[:, 1]
+        y_alloc_opp = y_allocation[:, 2]
+
         # Scale features
         X_scaled = self.scaler.fit_transform(X)
-        
+
         # Time-series cross-validation
         tscv = TimeSeriesSplit(n_splits=self.config.validation_splits)
-        
+
         metrics = {
             'range_rmse': [],
             'allocation_rmse': [],
             'regime_accuracy': [],
         }
-        
+
         for fold, (train_idx, val_idx) in enumerate(tscv.split(X_scaled)):
             X_train, X_val = X_scaled[train_idx], X_scaled[val_idx]
             y_range_train, y_range_val = y_range[train_idx], y_range[val_idx]
-            y_alloc_train, y_alloc_val = y_allocation[train_idx], y_allocation[val_idx]
             y_regime_train, y_regime_val = y_regime[train_idx], y_regime[val_idx]
-            
+
             # Train range model
             self.range_model.fit(
                 X_train, y_range_train,
@@ -199,16 +207,23 @@ class LiquidityStrategyModel:
             )
             range_pred = self.range_model.predict(X_val)
             metrics['range_rmse'].append(np.sqrt(mean_squared_error(y_range_val, range_pred)))
-            
-            # Train allocation model
-            self.allocation_model.fit(
-                X_train, y_alloc_train,
-                eval_set=[(X_val, y_alloc_val)],
-                callbacks=[lgb.early_stopping(self.config.early_stopping_rounds)]
-            )
-            alloc_pred = self.allocation_model.predict(X_val)
-            metrics['allocation_rmse'].append(np.sqrt(mean_squared_error(y_alloc_val, alloc_pred)))
-            
+
+            # Train 3 allocation models (core, defensive, opportunistic)
+            alloc_rmses = []
+            for model, y_full in [
+                (self.alloc_core_model, y_alloc_core),
+                (self.alloc_def_model, y_alloc_def),
+                (self.alloc_opp_model, y_alloc_opp),
+            ]:
+                model.fit(
+                    X_train, y_full[train_idx],
+                    eval_set=[(X_val, y_full[val_idx])],
+                    callbacks=[lgb.early_stopping(self.config.early_stopping_rounds)]
+                )
+                pred = model.predict(X_val)
+                alloc_rmses.append(np.sqrt(mean_squared_error(y_full[val_idx], pred)))
+            metrics['allocation_rmse'].append(np.mean(alloc_rmses))
+
             # Train regime model
             self.regime_model.fit(
                 X_train, y_regime_train,
@@ -217,14 +232,12 @@ class LiquidityStrategyModel:
             )
             regime_pred = self.regime_model.predict(X_val)
             metrics['regime_accuracy'].append(accuracy_score(y_regime_val, regime_pred))
-            
-            logger.info(f"Fold {fold + 1} completed", 
-                       range_rmse=metrics['range_rmse'][-1],
-                       regime_acc=metrics['regime_accuracy'][-1])
-        
+
         # Retrain on full data
         self.range_model.fit(X_scaled, y_range)
-        self.allocation_model.fit(X_scaled, y_allocation)
+        self.alloc_core_model.fit(X_scaled, y_alloc_core)
+        self.alloc_def_model.fit(X_scaled, y_alloc_def)
+        self.alloc_opp_model.fit(X_scaled, y_alloc_opp)
         self.regime_model.fit(X_scaled, y_regime)
         
         # Compute feature importance (average across models)
@@ -244,7 +257,9 @@ class LiquidityStrategyModel:
         
         for name, model in [
             ('range', self.range_model),
-            ('allocation', self.allocation_model),
+            ('alloc_core', self.alloc_core_model),
+            ('alloc_def', self.alloc_def_model),
+            ('alloc_opp', self.alloc_opp_model),
             ('regime', self.regime_model),
         ]:
             imp = model.feature_importances_
@@ -278,11 +293,10 @@ class LiquidityStrategyModel:
         range_width = float(self.range_model.predict(X_scaled)[0])
         range_width = max(2.0, min(20.0, range_width))  # Clamp to reasonable range
         
-        # Predict allocation
-        allocation = self.allocation_model.predict(X_scaled)[0]
-        core_alloc = float(np.clip(allocation[0], 50, 85))
-        def_alloc = float(np.clip(allocation[1], 10, 35))
-        opp_alloc = float(np.clip(allocation[2], 2, 15))
+        # Predict allocation (3 separate models)
+        core_alloc = float(np.clip(self.alloc_core_model.predict(X_scaled)[0], 50, 85))
+        def_alloc = float(np.clip(self.alloc_def_model.predict(X_scaled)[0], 10, 35))
+        opp_alloc = float(np.clip(self.alloc_opp_model.predict(X_scaled)[0], 2, 15))
         
         # Normalize to sum to ~95% (leave 5% cash buffer)
         total = core_alloc + def_alloc + opp_alloc
@@ -298,7 +312,8 @@ class LiquidityStrategyModel:
         detected_regime = regimes[regime_idx]
         
         # Calculate confidence based on prediction certainty
-        confidence = regime_confidence * 0.6 + (1 - np.std(allocation) / 100) * 0.4
+        alloc_std = np.std([core_alloc, def_alloc, opp_alloc])
+        confidence = regime_confidence * 0.6 + (1 - alloc_std / 100) * 0.4
         
         # Generate reasoning
         reasoning = self._generate_reasoning(features, detected_regime, range_width)
@@ -363,7 +378,9 @@ class LiquidityStrategyModel:
         path.mkdir(parents=True, exist_ok=True)
         
         joblib.dump(self.range_model, path / "range_model.joblib")
-        joblib.dump(self.allocation_model, path / "allocation_model.joblib")
+        joblib.dump(self.alloc_core_model, path / "alloc_core_model.joblib")
+        joblib.dump(self.alloc_def_model, path / "alloc_def_model.joblib")
+        joblib.dump(self.alloc_opp_model, path / "alloc_opp_model.joblib")
         joblib.dump(self.regime_model, path / "regime_model.joblib")
         joblib.dump(self.scaler, path / "scaler.joblib")
         joblib.dump({
@@ -377,7 +394,9 @@ class LiquidityStrategyModel:
     def load(self, path: Path):
         """Load models from disk"""
         self.range_model = joblib.load(path / "range_model.joblib")
-        self.allocation_model = joblib.load(path / "allocation_model.joblib")
+        self.alloc_core_model = joblib.load(path / "alloc_core_model.joblib")
+        self.alloc_def_model = joblib.load(path / "alloc_def_model.joblib")
+        self.alloc_opp_model = joblib.load(path / "alloc_opp_model.joblib")
         self.regime_model = joblib.load(path / "regime_model.joblib")
         self.scaler = joblib.load(path / "scaler.joblib")
         
