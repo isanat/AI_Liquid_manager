@@ -52,6 +52,7 @@ import { cn } from '@/lib/utils';
 import { WalletConnect } from '@/components/wallet-connect';
 import { UniswapPositions } from '@/components/uniswap-positions';
 import { OpenPositionModal } from '@/components/open-position-modal';
+import { useToast } from '@/hooks/use-toast';
 
 // Animated number component
 function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 2 }: {
@@ -174,9 +175,69 @@ function MetricCard({
 // Vault Manager Component
 function VaultManager() {
   const { vault, deposit, withdraw } = useLiquidityStore();
+  const { toast } = useToast();
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+
+  const handleDeposit = async () => {
+    const amount = parseFloat(depositAmount);
+    if (!depositAmount || isNaN(amount) || amount <= 0) {
+      toast({ title: 'Invalid amount', description: 'Enter a positive USD amount.', variant: 'destructive' });
+      return;
+    }
+    setIsDepositing(true);
+    try {
+      deposit(amount, 'investor');
+      // Persist to DB
+      await fetch('/api/vault', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'deposit', amount }),
+      });
+      setDepositAmount('');
+      toast({
+        title: 'Deposit successful',
+        description: `$${amount.toLocaleString()} added — ${(amount / vault.nav).toFixed(0)} shares issued.`,
+      });
+    } catch {
+      toast({ title: 'Deposit failed', description: 'Could not save to database.', variant: 'destructive' });
+    } finally {
+      setIsDepositing(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    const shares = parseFloat(withdrawAmount);
+    if (!withdrawAmount || isNaN(shares) || shares <= 0) {
+      toast({ title: 'Invalid amount', description: 'Enter a positive number of shares.', variant: 'destructive' });
+      return;
+    }
+    if (shares > vault.totalShares) {
+      toast({ title: 'Insufficient shares', description: `You have ${vault.totalShares.toLocaleString()} shares.`, variant: 'destructive' });
+      return;
+    }
+    setIsWithdrawing(true);
+    try {
+      withdraw(shares, 'investor');
+      await fetch('/api/vault', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'withdraw', shares }),
+      });
+      setWithdrawAmount('');
+      toast({
+        title: 'Withdrawal successful',
+        description: `${shares.toLocaleString()} shares redeemed — $${(shares * vault.nav).toLocaleString(undefined, { maximumFractionDigits: 2 })} returned.`,
+      });
+    } catch {
+      toast({ title: 'Withdrawal failed', description: 'Could not save to database.', variant: 'destructive' });
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
       <CardHeader className="pb-4">
@@ -220,29 +281,26 @@ function VaultManager() {
             <p className="text-xl font-bold">{vault.investors}</p>
           </div>
         </div>
-        
+
         <Separator className="bg-border/50" />
-        
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <input
               type="number"
-              placeholder="Amount"
+              placeholder="Amount (USD)"
               value={depositAmount}
               onChange={(e) => setDepositAmount(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleDeposit()}
               className="w-full px-3 py-2 text-sm bg-background/50 border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             />
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               className="w-full bg-emerald-600 hover:bg-emerald-700"
-              onClick={() => {
-                if (depositAmount) {
-                  deposit(parseFloat(depositAmount), 'investor');
-                  setDepositAmount('');
-                }
-              }}
+              onClick={handleDeposit}
+              disabled={isDepositing}
             >
-              Deposit
+              {isDepositing ? <><Minus className="h-3 w-3 mr-1 animate-spin" />Processing…</> : 'Deposit'}
             </Button>
           </div>
           <div className="space-y-2">
@@ -251,24 +309,21 @@ function VaultManager() {
               placeholder="Shares"
               value={withdrawAmount}
               onChange={(e) => setWithdrawAmount(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleWithdraw()}
               className="w-full px-3 py-2 text-sm bg-background/50 border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/50"
             />
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="destructive"
               className="w-full"
-              onClick={() => {
-                if (withdrawAmount) {
-                  withdraw(parseFloat(withdrawAmount), 'investor');
-                  setWithdrawAmount('');
-                }
-              }}
+              onClick={handleWithdraw}
+              disabled={isWithdrawing}
             >
-              Withdraw
+              {isWithdrawing ? <><Minus className="h-3 w-3 mr-1 animate-spin" />Processing…</> : 'Withdraw'}
             </Button>
           </div>
         </div>
-        
+
         <div className="text-xs text-muted-foreground">
           Last Rebalance: {vault.lastRebalance.toLocaleTimeString()}
         </div>
@@ -279,16 +334,28 @@ function VaultManager() {
 
 // Strategy Controller Component
 function StrategyController() {
-  const { currentCycle, startCycle, executeRebalance, systemStatus } = useLiquidityStore();
+  const { currentCycle, startCycle, executeRebalance, updateMarketData, systemStatus } = useLiquidityStore();
+  const { toast } = useToast();
   const [cyclePhase, setCyclePhase] = useState(0);
-  
+
   const phases = [
     { name: 'Data Collection', icon: Activity, key: 'data-collection' },
     { name: 'AI Inference', icon: Brain, key: 'ai-inference' },
     { name: 'Range Optimization', icon: Target, key: 'range-optimization' },
     { name: 'Execution', icon: Zap, key: 'execution' },
   ];
-  
+
+  const handleRunCycle = () => {
+    startCycle();
+    updateMarketData(); // real fetch
+    toast({ title: 'Strategy cycle started', description: 'Fetching market data and running AI inference…' });
+  };
+
+  const handleRebalance = () => {
+    executeRebalance();
+    toast({ title: 'Rebalance queued', description: 'Position rebalance submitted with current AI parameters.' });
+  };
+
   useEffect(() => {
     if (currentCycle) {
       const interval = setInterval(() => {
@@ -298,6 +365,8 @@ function StrategyController() {
         });
       }, 2000);
       return () => clearInterval(interval);
+    } else {
+      setCyclePhase(0);
     }
   }, [currentCycle]);
   
@@ -392,17 +461,17 @@ function StrategyController() {
           <Button
             size="sm"
             className="flex-1 bg-violet-600 hover:bg-violet-700"
-            onClick={startCycle}
+            onClick={handleRunCycle}
             disabled={!!currentCycle}
           >
             <Play className="h-4 w-4 mr-1" />
-            Run Cycle
+            {currentCycle ? 'Running…' : 'Run Cycle'}
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="flex-1"
-            onClick={executeRebalance}
+            onClick={handleRebalance}
           >
             Rebalance
           </Button>
@@ -615,7 +684,26 @@ function RangeOptimizer() {
 // Execution Engine Component
 function ExecutionEngine() {
   const { positions, recentExecutions, collectFees, marketData, aiOutputs } = useLiquidityStore();
+  const { toast } = useToast();
   const [openPositionModal, setOpenPositionModal] = useState(false);
+  const [collectingId, setCollectingId] = useState<string | null>(null);
+
+  const handleCollectFees = async (posId: string, fees0: number, fees1: number) => {
+    if (fees0 === 0 && fees1 === 0) {
+      toast({ title: 'No fees to collect', description: 'This position has no uncollected fees.' });
+      return;
+    }
+    setCollectingId(posId);
+    try {
+      collectFees(posId);
+      toast({
+        title: 'Fees collected',
+        description: `+${fees0.toFixed(4)} ETH  +${fees1.toFixed(2)} USDC`,
+      });
+    } finally {
+      setCollectingId(null);
+    }
+  };
   
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
@@ -635,7 +723,7 @@ function ExecutionEngine() {
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">Active Positions</p>
-          <ScrollArea className="h-40">
+          <ScrollArea className="h-44">
             {positions.map((pos) => (
               <div
                 key={pos.id}
@@ -653,13 +741,20 @@ function ExecutionEngine() {
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-emerald-400">
-                    +{pos.feesEarned0.toFixed(4)} ETH
-                  </p>
-                  <p className="text-xs text-emerald-400">
-                    +{pos.feesEarned1.toFixed(2)} USDC
-                  </p>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <p className="text-xs text-emerald-400">+{pos.feesEarned0.toFixed(4)} ETH</p>
+                    <p className="text-xs text-emerald-400">+{pos.feesEarned1.toFixed(2)} USDC</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                    disabled={collectingId === pos.id}
+                    onClick={() => handleCollectFees(pos.id, pos.feesEarned0, pos.feesEarned1)}
+                  >
+                    <Coins className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
             ))}
@@ -894,12 +989,18 @@ function PriceChart() {
 
 // Data Layer Component
 function DataLayer() {
-  const { marketData, poolData, updateMarketData } = useLiquidityStore();
-  
+  const { marketData, poolData, updateMarketData, isLoading, dataSource } = useLiquidityStore();
+  const { toast } = useToast();
+
   useEffect(() => {
-    const interval = setInterval(updateMarketData, 5000);
+    const interval = setInterval(updateMarketData, 30000); // 30s — don't hammer The Graph
     return () => clearInterval(interval);
   }, [updateMarketData]);
+
+  const handleRefresh = () => {
+    updateMarketData();
+    toast({ title: 'Refreshing market data…', description: `Source: ${dataSource}` });
+  };
   
   const dataPoints = [
     { label: 'Price', value: `$${marketData.price.toFixed(2)}`, icon: Coins },
@@ -930,8 +1031,8 @@ function DataLayer() {
               <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
               Live
             </Badge>
-            <Button size="sm" variant="outline" onClick={updateMarketData}>
-              Refresh
+            <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isLoading}>
+              {isLoading ? <><Minus className="h-3 w-3 mr-1 animate-spin" />Loading…</> : 'Refresh'}
             </Button>
           </div>
         </div>
