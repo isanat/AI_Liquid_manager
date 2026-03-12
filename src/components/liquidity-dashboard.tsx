@@ -62,8 +62,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useLiquidityStore } from '@/lib/liquidity-store';
 import { cn } from '@/lib/utils';
-import { WalletConnect } from '@/components/wallet-connect';
+import { WalletConnect, ACTIVE_CHAIN_ID } from '@/components/wallet-connect';
 import { NetworkGuard } from '@/components/network-guard';
+
+// Derive network label and explorer from ACTIVE_CHAIN_ID (set via NEXT_PUBLIC_CHAIN_ID)
+const NETWORK_LABEL   = ACTIVE_CHAIN_ID === 421614 ? 'Arbitrum Sepolia' : 'Arbitrum One';
+const EXPLORER_BASE   = ACTIVE_CHAIN_ID === 421614 ? 'https://sepolia.arbiscan.io' : 'https://arbiscan.io';
 import { UniswapPositions } from '@/components/uniswap-positions';
 import { OpenPositionModal } from '@/components/open-position-modal';
 import { useToast } from '@/hooks/use-toast';
@@ -322,10 +326,10 @@ function VaultManager() {
             <div>
               <CardTitle className="text-lg">Vault Manager</CardTitle>
               <CardDescription>
-                ERC-4626 · Arbitrum One
+                ERC-4626 · {NETWORK_LABEL}
                 {VAULT_ADDRESS && (
                   <a
-                    href={`https://arbiscan.io/address/${VAULT_ADDRESS}`}
+                    href={`${EXPLORER_BASE}/address/${VAULT_ADDRESS}`}
                     target="_blank" rel="noopener noreferrer"
                     className="ml-2 font-mono text-xs text-emerald-400 hover:underline"
                   >
@@ -385,7 +389,7 @@ function VaultManager() {
 
         {!isConnected ? (
           <p className="text-xs text-muted-foreground text-center py-2">
-            Connect wallet (Arbitrum One) to deposit or withdraw
+            Connect wallet ({NETWORK_LABEL}) to deposit or withdraw
           </p>
         ) : (
           <>
@@ -435,7 +439,7 @@ function VaultManager() {
               <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded p-2">
                 <span>Tx confirmed:</span>
                 <a
-                  href={`https://arbiscan.io/tx/${txHash}`}
+                  href={`${EXPLORER_BASE}/tx/${txHash}`}
                   target="_blank" rel="noopener noreferrer"
                   className="font-mono underline"
                 >
