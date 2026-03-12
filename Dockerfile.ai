@@ -14,11 +14,11 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Copy requirements and install
-COPY ai-engine/requirements.txt .
+COPY ai_engine/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY ai-engine/ ./ai-engine/
+COPY ai_engine/ ./ai_engine/
 
 # Create models directory
 RUN mkdir -p /app/models/saved
@@ -31,4 +31,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
 # Run the API - shell form enables variable expansion
-CMD python -m uvicorn ai-engine.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD python -m uvicorn ai_engine.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
