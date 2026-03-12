@@ -36,6 +36,8 @@ contract Deploy is Script {
     address constant USDC_ARBITRUM_ONE     = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
     // Circle's testnet USDC on Arbitrum Sepolia
     address constant USDC_ARBITRUM_SEPOLIA = 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d;
+    // Circle's testnet USDC on Ethereum Sepolia
+    address constant USDC_ETH_SEPOLIA      = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
 
     function run() external {
         address strategyManager = vm.envAddress("STRATEGY_MANAGER");
@@ -54,6 +56,8 @@ contract Deploy is Script {
                 usdc = USDC_ARBITRUM_ONE;
             } else if (block.chainid == 421614) {
                 usdc = USDC_ARBITRUM_SEPOLIA;
+            } else if (block.chainid == 11155111) {
+                usdc = USDC_ETH_SEPOLIA;
             } else {
                 revert("Deploy: unknown chainId - set USDC_ADDRESS manually");
             }

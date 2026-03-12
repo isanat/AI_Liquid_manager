@@ -10,6 +10,7 @@ optimizer_runs = 200
 via_ir = false
 
 [rpc_endpoints]
+sepolia          = "${RPC_URL_SEPOLIA}"
 arbitrum_sepolia = "${RPC_URL_ARBITRUM_SEPOLIA}"
 arbitrum_one     = "${RPC_URL_ARBITRUM}"
 
