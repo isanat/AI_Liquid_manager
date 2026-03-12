@@ -4,9 +4,15 @@ AI Liquidity Manager - Main Entry Point
 Run the AI engine as a standalone service.
 """
 import os
+import sys
 import asyncio
 import argparse
 from pathlib import Path
+
+# Ensure ai_engine package root is importable
+_ai_engine = str(Path(__file__).resolve().parent)
+if _ai_engine not in sys.path:
+    sys.path.insert(0, _ai_engine)
 
 from models.strategy_model import LiquidityStrategyModel, RuleBasedFallback
 from features.feature_engineering import FeatureEngineer

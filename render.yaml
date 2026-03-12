@@ -20,6 +20,10 @@ services:
         value: "1"
       - key: PYTHONPATH
         value: /opt/render/project/src
+      - key: THE_GRAPH_API_KEY
+        value: server_7f90e2479fa2385aa72a55ca3fd847cc
+      - key: THE_GRAPH_API_KEY2
+        value: servidor_1ed6c55d924ac2041aae14ae78638aa1
 
   # ============================================
   # Frontend - Next.js
@@ -39,6 +43,10 @@ services:
           name: ai-liquidity-engine
           type: web
           property: url
+      - key: THE_GRAPH_API_KEY
+        value: server_7f90e2479fa2385aa72a55ca3fd847cc
+      - key: THE_GRAPH_API_KEY2
+        value: servidor_1ed6c55d924ac2041aae14ae78638aa1
 
   # ============================================
   # PostgreSQL Database
