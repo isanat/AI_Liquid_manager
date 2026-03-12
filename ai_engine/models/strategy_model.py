@@ -185,8 +185,9 @@ class LiquidityStrategyModel:
         # Scale features
         X_scaled = self.scaler.fit_transform(X)
 
-        # Time-series cross-validation
-        tscv = TimeSeriesSplit(n_splits=self.config.validation_splits)
+        # Time-series cross-validation (reduce splits for small datasets)
+        n_splits = min(self.config.validation_splits, max(2, X.shape[0] // 30))
+        tscv = TimeSeriesSplit(n_splits=n_splits)
 
         metrics = {
             'range_rmse': [],
@@ -194,51 +195,41 @@ class LiquidityStrategyModel:
             'regime_accuracy': [],
         }
 
-        for fold, (train_idx, val_idx) in enumerate(tscv.split(X_scaled)):
-            X_train, X_val = X_scaled[train_idx], X_scaled[val_idx]
-            y_range_train, y_range_val = y_range[train_idx], y_range[val_idx]
-            y_regime_train, y_regime_val = y_regime[train_idx], y_regime[val_idx]
+        # Use 80/20 split for validation instead of CV (safer for small datasets)
+        split_idx = int(X_scaled.shape[0] * 0.8)
+        X_train, X_val = X_scaled[:split_idx], X_scaled[split_idx:]
+        y_range_train, y_range_val = y_range[:split_idx], y_range[split_idx:]
+        y_regime_train, y_regime_val = y_regime[:split_idx], y_regime[split_idx:]
 
-            # Train range model
-            self.range_model.fit(
-                X_train, y_range_train,
-                eval_set=[(X_val, y_range_val)],
-                callbacks=[lgb.early_stopping(self.config.early_stopping_rounds)]
-            )
-            range_pred = self.range_model.predict(X_val)
-            metrics['range_rmse'].append(np.sqrt(mean_squared_error(y_range_val, range_pred)))
+        # Train range model
+        self.range_model.fit(X_train, y_range_train)
+        range_pred = self.range_model.predict(X_val)
+        metrics['range_rmse'].append(np.sqrt(mean_squared_error(y_range_val, range_pred)))
 
-            # Train 3 allocation models (core, defensive, opportunistic)
-            alloc_rmses = []
-            for model, y_full in [
-                (self.alloc_core_model, y_alloc_core),
-                (self.alloc_def_model, y_alloc_def),
-                (self.alloc_opp_model, y_alloc_opp),
-            ]:
-                model.fit(
-                    X_train, y_full[train_idx],
-                    eval_set=[(X_val, y_full[val_idx])],
-                    callbacks=[lgb.early_stopping(self.config.early_stopping_rounds)]
-                )
-                pred = model.predict(X_val)
-                alloc_rmses.append(np.sqrt(mean_squared_error(y_full[val_idx], pred)))
-            metrics['allocation_rmse'].append(np.mean(alloc_rmses))
+        # Train 3 allocation models
+        alloc_rmses = []
+        for model, y_full in [
+            (self.alloc_core_model, y_alloc_core),
+            (self.alloc_def_model, y_alloc_def),
+            (self.alloc_opp_model, y_alloc_opp),
+        ]:
+            model.fit(X_train, y_full[:split_idx])
+            pred = model.predict(X_val)
+            alloc_rmses.append(np.sqrt(mean_squared_error(y_full[split_idx:], pred)))
+        metrics['allocation_rmse'].append(np.mean(alloc_rmses))
 
-            # Train regime model
-            self.regime_model.fit(
-                X_train, y_regime_train,
-                eval_set=[(X_val, y_regime_val)],
-                callbacks=[lgb.early_stopping(self.config.early_stopping_rounds)]
-            )
-            regime_pred = self.regime_model.predict(X_val)
-            metrics['regime_accuracy'].append(accuracy_score(y_regime_val, regime_pred))
+        # Train regime classifier
+        y_regime_int = y_regime.astype(np.int32)
+        self.regime_model.fit(X_train, y_regime_int[:split_idx])
+        regime_pred = self.regime_model.predict(X_val)
+        metrics['regime_accuracy'].append(accuracy_score(y_regime_int[split_idx:], regime_pred))
 
-        # Retrain on full data
+        # Retrain all models on full data for production use
         self.range_model.fit(X_scaled, y_range)
         self.alloc_core_model.fit(X_scaled, y_alloc_core)
         self.alloc_def_model.fit(X_scaled, y_alloc_def)
         self.alloc_opp_model.fit(X_scaled, y_alloc_opp)
-        self.regime_model.fit(X_scaled, y_regime)
+        self.regime_model.fit(X_scaled, y_regime_int)
         
         # Compute feature importance (average across models)
         self._compute_feature_importance()
