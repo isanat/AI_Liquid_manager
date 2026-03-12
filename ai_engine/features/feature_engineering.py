@@ -6,7 +6,7 @@ Converts raw market data into ML features.
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 import structlog
 
@@ -307,27 +307,34 @@ class FeatureEngineer:
 
 class DataFetcher:
     """
-    Fetches data from various sources:
-    - RPC nodes (price, pool state)
-    - Subgraphs (historical data)
-    - APIs (volume, fees)
+    Fetches real data from The Graph (Uniswap V3 subgraph).
+    Falls back gracefully to defaults when The Graph is unavailable.
+
+    Set THE_GRAPH_API_KEY env var for higher rate limits.
     """
-    
-    def __init__(self, rpc_url: str, subgraph_url: Optional[str] = None):
+
+    def __init__(self, rpc_url: str = "", subgraph_url: Optional[str] = None):
         self.rpc_url = rpc_url
-        self.subgraph_url = subgraph_url
         self.feature_engineer = FeatureEngineer()
-    
+
     async def fetch_pool_state(self, pool_address: str) -> Dict[str, Any]:
-        """
-        Fetch current pool state from RPC.
-        
-        In production, this would:
-        1. Call slot0() for current price/tick
-        2. Call liquidity() for current liquidity
-        3. Query token balances for TVL
-        """
-        # Placeholder - in production use web3.py
+        """Fetch current pool state from The Graph."""
+        from data.graph_client import fetch_pool_state
+        state = await fetch_pool_state(pool_address)
+        if state:
+            return {
+                'pool_address': pool_address,
+                'sqrt_price_x96': int(state.get('sqrtPrice', 0)),
+                'tick': int(state.get('tick', 0)),
+                'liquidity': int(state.get('liquidity', 0)),
+                'token0_price': float(state.get('token0Price', 0)),
+                'token1_price': float(state.get('token1Price', 0)),
+                'tvl_usd': float(state.get('totalValueLockedUSD', 0)),
+                'volume_usd': float(state.get('volumeUSD', 0)),
+                'fee_tier': int(state.get('feeTier', 3000)),
+                'timestamp': datetime.utcnow(),
+            }
+        # Fallback defaults (data unavailable)
         return {
             'pool_address': pool_address,
             'sqrt_price_x96': 0,
@@ -335,33 +342,67 @@ class DataFetcher:
             'liquidity': 0,
             'timestamp': datetime.utcnow(),
         }
-    
+
     async def fetch_historical_data(
-        self, 
-        pool_address: str, 
-        hours: int = 168
+        self,
+        pool_address: str,
+        hours: int = 168,
     ) -> List[Dict[str, Any]]:
-        """
-        Fetch historical data from subgraph.
-        
-        In production, query Uniswap V3 subgraph for:
-        - Pool day/hour data
-        - Token prices
-        - Volume, fees, TVL
-        """
-        return []
-    
+        """Fetch hourly historical snapshots from The Graph."""
+        from data.graph_client import fetch_pool_hour_data
+        return await fetch_pool_hour_data(pool_address, hours)
+
     async def get_features(self, pool_address: str) -> MarketFeatures:
         """
-        Fetch current data and compute features.
+        Fetch real pool data from The Graph and compute ML features.
+        Falls back to safe defaults if data is unavailable.
         """
-        # Placeholder implementation
-        # In production, fetch real data from RPC/subgraph
+        state = await self.fetch_pool_state(pool_address)
+        history = await self.fetch_historical_data(pool_address, hours=168)
+
+        price = state.get('token0_price') or 0.0
+        tvl = state.get('tvl_usd') or 0.0
+
+        # Feed historical rows into feature history
+        for row in history[:-1]:
+            p = float(row.get('token0Price', price) or price)
+            if p <= 0:
+                continue
+            v = float(row.get('volumeUSD', 0) or 0)
+            liq = float(row.get('tvlUSD', tvl) or tvl)
+            fees = float(row.get('feesUSD', 0) or 0)
+            ts_unix = int(row.get('periodStartUnix', 0) or 0)
+            ts = datetime.fromtimestamp(ts_unix, tz=timezone.utc) if ts_unix else datetime.utcnow()
+            self.feature_engineer.update(
+                price=p,
+                volume_24h=v * 24,   # hourly → daily equivalent
+                liquidity=liq,
+                fees_24h=fees * 24,
+                timestamp=ts,
+            )
+
+        # Use latest row for current snapshot
+        if history:
+            latest = history[-1]
+            current_price = float(latest.get('token0Price', price) or price)
+            volume_24h = float(latest.get('volumeUSD', 0) or 0) * 24
+            fees_24h = float(latest.get('feesUSD', 0) or 0) * 24
+            total_liquidity = float(latest.get('tvlUSD', tvl) or tvl)
+        else:
+            current_price = price or 1850.0
+            volume_24h = 12_000_000.0
+            fees_24h = 36_000.0
+            total_liquidity = tvl or 25_000_000.0
+
+        current_tick = state.get('tick') or 0
+        raw_liquidity = state.get('liquidity') or 0
+        active_liquidity = float(raw_liquidity) if raw_liquidity else (total_liquidity * 0.5)
+
         return self.feature_engineer.compute_features(
-            current_price=1850.0,
-            current_tick=85000,
-            total_liquidity=25_000_000,
-            active_liquidity=12_000_000,
-            volume_1h=500_000,
-            volume_24h=12_000_000,
+            current_price=current_price,
+            current_tick=current_tick,
+            total_liquidity=total_liquidity,
+            active_liquidity=active_liquidity,
+            volume_1h=volume_24h / 24,
+            volume_24h=volume_24h,
         )
