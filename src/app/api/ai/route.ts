@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000';
+// Use deployed AI Engine on Render by default
+const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'https://ai-liquid-manager.onrender.com';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
