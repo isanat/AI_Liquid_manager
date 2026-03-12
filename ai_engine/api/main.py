@@ -379,6 +379,57 @@ async def run_backtest(config: BacktestConfig):
     )
 
 
+async def _fetch_coingecko_history(days: int = 365):
+    """
+    Fetch daily ETH/USD OHLCV from CoinGecko free API (no key needed).
+    Returns a DataFrame with columns: timestamp, price, volume_24h, liquidity, fees_24h
+    or None on failure.
+    """
+    import pandas as pd
+
+    url = (
+        f"https://api.coingecko.com/api/v3/coins/ethereum/market_chart"
+        f"?vs_currency=usd&days={days}&interval=daily"
+    )
+    try:
+        async with __import__("httpx").AsyncClient(timeout=30.0) as client:
+            resp = await client.get(url, headers={"Accept": "application/json"})
+            resp.raise_for_status()
+            data = resp.json()
+
+        prices  = data.get("prices", [])          # [[ts_ms, price], …]
+        volumes = data.get("total_volumes", [])   # [[ts_ms, vol], …]
+
+        if len(prices) < 20:
+            return None
+
+        vol_map = {int(ts): v for ts, v in volumes}
+
+        records = []
+        for ts_ms, price in prices:
+            if price <= 0:
+                continue
+            ts_s = int(ts_ms) // 1000
+            vol = vol_map.get(int(ts_ms), 0)
+            # Estimate LP fees: Uniswap V3 ETH/USDC 0.3% pool ≈ 0.3% * volume * 0.25 (in-range fraction)
+            fees = vol * 0.003 * 0.25
+            # Estimate TVL from volume (rough: TVL ≈ 30× daily volume for ETH/USDC 0.3%)
+            tvl = vol * 30
+            records.append({
+                "timestamp": pd.Timestamp(ts_s, unit="s"),
+                "price": price,
+                "volume_24h": vol,
+                "liquidity": tvl,
+                "fees_24h": fees,
+            })
+
+        return pd.DataFrame(records) if records else None
+
+    except Exception as e:
+        logger.warning(f"CoinGecko fetch failed: {e}")
+        return None
+
+
 @app.post("/train")
 async def train_model(config: TrainConfig):
     """
@@ -422,12 +473,19 @@ async def train_model(config: TrainConfig):
             rows = []
 
     if not rows:
-        if not config.use_synthetic_fallback:
+        # ── CoinGecko fallback: free, no API key, up to 365 days ─────────────
+        cg_df = await _fetch_coingecko_history(days=min(config.days, 365))
+        if cg_df is not None and len(cg_df) >= 20:
+            df = cg_df
+            data_source = "coingecko"
+            logger.info(f"CoinGecko data loaded for training rows={len(df)}")
+        elif not config.use_synthetic_fallback:
             raise HTTPException(
                 status_code=503,
                 detail="The Graph returned no data and synthetic fallback is disabled.",
             )
-        df = generate_synthetic_history(days=max(config.days, 90), volatility=0.04)
+        else:
+            df = generate_synthetic_history(days=max(config.days, 90), volatility=0.04)
 
     # ── Build feature matrix from history ────────────────────────────────────
     fe = FeatureEngineer()
