@@ -485,12 +485,20 @@ async def train_model(config: TrainConfig):
     y_regime = np.array(y_regime_rows, dtype=np.int32)
     y_regime = np.clip(y_regime, 0, 3)  # Ensure valid labels
 
+    logger.info(f"Training data shapes: X={X.shape} y_range={y_range.shape} y_alloc={y_alloc.shape} y_regime={y_regime.shape}")
+    logger.info(f"y_regime unique values: {np.unique(y_regime).tolist()}")
+
     model = LiquidityStrategyModel()
     try:
         metrics = model.train(X, y_range, y_alloc, y_regime)
     except Exception as e:
         logger.error(f"Training failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Training failed: {e}")
+        detail = (
+            f"Training failed: {e} | "
+            f"X.shape={X.shape}, y_regime unique={np.unique(y_regime).tolist()}, "
+            f"y_regime dtype={y_regime.dtype}"
+        )
+        raise HTTPException(status_code=500, detail=detail)
 
     save_path = Path(__file__).parent.parent / "models" / "saved"
     model.save(save_path)
