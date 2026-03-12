@@ -49,6 +49,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useLiquidityStore } from '@/lib/liquidity-store';
 import { cn } from '@/lib/utils';
+import { WalletConnect } from '@/components/wallet-connect';
+import { UniswapPositions } from '@/components/uniswap-positions';
+import { OpenPositionModal } from '@/components/open-position-modal';
 
 // Animated number component
 function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 2 }: {
@@ -611,7 +614,8 @@ function RangeOptimizer() {
 
 // Execution Engine Component
 function ExecutionEngine() {
-  const { positions, recentExecutions, collectFees } = useLiquidityStore();
+  const { positions, recentExecutions, collectFees, marketData, aiOutputs } = useLiquidityStore();
+  const [openPositionModal, setOpenPositionModal] = useState(false);
   
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
@@ -689,6 +693,28 @@ function ExecutionEngine() {
             )}
           </div>
         </div>
+
+        <Separator className="bg-border/50" />
+
+        {/* On-chain positions via wallet */}
+        <UniswapPositions />
+
+        <Button
+          size="sm"
+          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+          onClick={() => setOpenPositionModal(true)}
+        >
+          <Zap className="h-3 w-3 mr-1" />
+          Open New Position (AI Range)
+        </Button>
+
+        <OpenPositionModal
+          open={openPositionModal}
+          onClose={() => setOpenPositionModal(false)}
+          currentPrice={marketData?.price ?? 1850}
+          aiRangeWidth={aiOutputs?.rangeWidth ?? 7}
+          aiConfidence={aiOutputs?.confidence ?? 0.72}
+        />
       </CardContent>
     </Card>
   );
@@ -1043,10 +1069,7 @@ export default function LiquidityManagerDashboard() {
                 <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
                 System Online
               </Badge>
-              <Button variant="outline" size="sm">
-                <Wallet className="h-4 w-4 mr-2" />
-                Connect
-              </Button>
+              <WalletConnect />
             </div>
           </div>
         </div>
