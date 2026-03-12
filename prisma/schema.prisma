@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// AI Liquidity Manager - Database Schema
+// Proper schema for DeFi liquidity management
 
 generator client {
   provider = "prisma-client-js"
@@ -13,20 +10,218 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// === Vault Management ===
+
+model Vault {
+  id                String    @id @default(cuid())
+  name              String
+  protocol          String    // "uniswap-v3", "orca", "raydium"
+  network           String    // "ethereum", "arbitrum", "solana"
+  
+  // Pool info
+  poolAddress       String
+  token0Symbol      String
+  token1Symbol      String
+  token0Address     String
+  token1Address     String
+  feeTier           Int       // 500, 3000, 10000 for Uniswap V3
+  
+  // Capital
+  totalValueLocked  Float     @default(0)
+  availableCapital  Float     @default(0)
+  
+  // Status
+  status            String    @default("active") // "active", "paused", "withdrawn"
+  
+  // Relations
+  positions         Position[]
+  strategies        Strategy[]
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([poolAddress])
+  @@index([protocol, network])
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Position {
+  id                String    @id @default(cuid())
+  vaultId           String
+  vault             Vault     @relation(fields: [vaultId], references: [id])
+  
+  // Position details (Uniswap V3 ticks)
+  tickLower         Int
+  tickUpper         Int
+  priceLower        Float     // Calculated from tick
+  priceUpper        Float
+  
+  // Liquidity
+  liquidity         Float     @default(0)
+  amount0           Float     @default(0)  // Token0 amount
+  amount1           Float     @default(0)  // Token1 amount
+  
+  // Performance
+  feesCollected0    Float     @default(0)
+  feesCollected1    Float     @default(0)
+  impermanentLoss   Float     @default(0)
+  
+  // Entry/Exit
+  entryPrice        Float
+  currentPrice      Float?
+  
+  // Status
+  status            String    @default("active") // "active", "closed", "pending_rebalance"
+  txHashOpen        String?
+  txHashClose       String?
+  
+  // Timestamps
+  openedAt          DateTime  @default(now())
+  closedAt          DateTime?
+  
+  trades            Trade[]
+  
+  @@index([vaultId])
+  @@index([status])
+}
+
+model Strategy {
+  id                String    @id @default(cuid())
+  vaultId           String
+  vault             Vault     @relation(fields: [vaultId], references: [id])
+  
+  // Strategy parameters
+  name              String
+  type              String    // "grid", "momentum", "mean_reversion", "ai_optimized"
+  
+  // AI outputs
+  rangeWidth        Float     // Target range width (%)
+  rangeBias         Float     // Bias toward price direction
+  coreAllocation    Float     @default(0.70)
+  defensiveAllocation Float   @default(0.20)
+  opportunisticAllocation Float @default(0.10)
+  cashBuffer        Float     @default(0.05)
+  
+  // Risk management
+  rebalanceThreshold Float    @default(0.05)
+  stopLossPercent   Float?
+  takeProfitPercent Float?
+  
+  // Model metadata
+  modelVersion      String?
+  confidence        Float?
+  detectedRegime    String?
+  
+  // Performance tracking
+  backtestApr       Float?
+  backtestSharpe    Float?
+  backtestMaxDrawdown Float?
+  
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([vaultId])
+  @@index([type])
+}
+
+model Trade {
+  id                String    @id @default(cuid())
+  positionId        String
+  position          Position  @relation(fields: [positionId], references: [id])
+  
+  // Trade details
+  type              String    // "open", "close", "rebalance", "collect_fees"
+  amount0           Float
+  amount1           Float
+  price             Float
+  
+  // Transaction
+  txHash            String?
+  gasUsed           Float?
+  gasPrice          Float?
+  gasCostUsd        Float?
+  
+  // PnL (for close trades)
+  realizedPnl       Float?
+  feesEarned        Float?
+  
+  executedAt        DateTime  @default(now())
+  
+  @@index([positionId])
+  @@index([type])
+}
+
+// === Market Data ===
+
+model MarketData {
+  id                String    @id @default(cuid())
+  poolAddress       String
+  
+  // OHLCV
+  timestamp         DateTime
+  open              Float
+  high              Float
+  low               Float
+  close             Float
+  volume            Float
+  
+  // Pool metrics
+  tvl               Float
+  liquidity         Float
+  feeGrowthGlobal0  Float?
+  feeGrowthGlobal1  Float?
+  
+  // Derived metrics
+  volatility24h     Float?
+  volume24h         Float?
+  twap1h            Float?
+  twap24h           Float?
+  
+  createdAt         DateTime  @default(now())
+  
+  @@unique([poolAddress, timestamp])
+  @@index([poolAddress, timestamp])
+}
+
+// === Model Tracking ===
+
+model ModelVersion {
+  id                String    @id @default(cuid())
+  version           String    @unique
+  
+  // Training info
+  trainedAt         DateTime  @default(now())
+  samplesUsed       Int
+  featuresCount     Int
+  
+  // Metrics
+  trainLoss         Float?
+  valLoss           Float?
+  testSharpe        Float?
+  testApr           Float?
+  testMaxDrawdown   Float?
+  
+  // Feature importance (JSON)
+  featureImportance String?
+  
+  isActive          Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+}
+
+// === API Keys (for external services) ===
+
+model ApiKey {
+  id                String    @id @default(cuid())
+  service           String    // "coingecko", "thegraph", "alchemy", "quicknode"
+  name              String?
+  key               String    // Encrypted
+  endpoint          String?
+  rateLimit         Int?
+  
+  isActive          Boolean   @default(true)
+  lastUsed          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@unique([service, name])
 }

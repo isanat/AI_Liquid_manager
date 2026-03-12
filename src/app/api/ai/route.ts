@@ -6,6 +6,7 @@ const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'https://ai-liquid-manager.on
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action') || 'health';
+  const poolAddress = searchParams.get('pool');
 
   try {
     switch (action) {
@@ -21,10 +22,22 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: true, data });
       }
 
+      case 'pool': {
+        if (!poolAddress) {
+          return NextResponse.json({ success: false, error: 'Pool address required' }, { status: 400 });
+        }
+        const network = searchParams.get('network') || 'ethereum';
+        const response = await fetch(`${AI_ENGINE_URL}/pool/${poolAddress}?network=${network}`);
+        const data = await response.json();
+        return NextResponse.json({ success: true, data });
+      }
+
       default:
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
     }
-  } catch {
+  } catch (error) {
+    console.error('AI Engine error:', error);
+    
     // Fallback to simulated data if AI engine not available
     if (action === 'health') {
       return NextResponse.json({
@@ -32,7 +45,7 @@ export async function GET(request: NextRequest) {
         data: {
           status: 'degraded',
           model_loaded: false,
-          model_version: 'rule-based',
+          model_version: 'fallback',
           uptime_seconds: 0,
           fallback: true,
         }
@@ -70,41 +83,15 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, data });
       }
 
-      case 'train': {
-        const response = await fetch(`${AI_ENGINE_URL}/train`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const data = await response.json();
-        return NextResponse.json({ success: true, data });
-      }
-
       default:
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
     }
-  } catch {
-    // Fallback to simulated inference
-    if (action === 'inference') {
-      return NextResponse.json({
-        success: true,
-        data: {
-          range_width: 7,
-          range_bias: 0,
-          core_allocation: 70,
-          defensive_allocation: 20,
-          opportunistic_allocation: 10,
-          cash_buffer: 5,
-          rebalance_threshold: 0.065,
-          confidence: 0.75,
-          detected_regime: 'range',
-          regime_confidence: 0.8,
-          reasoning: 'Rule-based fallback: Normal market conditions detected.',
-          model_version: 'rule-based-fallback',
-          fallback: true,
-        }
-      });
-    }
-    return NextResponse.json({ success: false, error: 'AI Engine unavailable' }, { status: 503 });
+  } catch (error) {
+    console.error('AI Engine error:', error);
+    
+    return NextResponse.json({ 
+      success: false, 
+      error: 'AI Engine unavailable. Check if the service is running.' 
+    }, { status: 503 });
   }
 }
