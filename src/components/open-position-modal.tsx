@@ -52,8 +52,8 @@ export function OpenPositionModal({ open, onClose, currentPrice, aiRangeWidth, a
 
   const [priceLower, setPriceLower] = useState(defaultLower);
   const [priceUpper, setPriceUpper] = useState(defaultUpper);
-  const [ethAmount, setEthAmount] = useState('0.01');
-  const [usdcAmount, setUsdcAmount] = useState('18.5');
+  const [ethAmount, setEthAmount] = useState('');
+  const [usdcAmount, setUsdcAmount] = useState('');
 
   const [step, setStep] = useState<'idle' | 'approving0' | 'approving1' | 'minting' | 'done'>('idle');
   const [txHash, setTxHash] = useState<string | null>(null);

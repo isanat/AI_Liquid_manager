@@ -329,7 +329,11 @@ class LiquidityBacktester:
         
         # Defensive position (if significant allocation)
         def_pct = output.defensive_allocation / 100
-        capital_def = self.cash * def_pct / (1 - core_pct)
+        denominator = 1 - core_pct
+        if denominator <= 0:
+            capital_def = 0.0  # core_pct=100% leaves nothing for defensive allocation
+        else:
+            capital_def = self.cash * def_pct / denominator
         
         if capital_def > 1000:
             def_lower = tick - int(range_width * 3 * 10000 / tick_spacing) * tick_spacing
