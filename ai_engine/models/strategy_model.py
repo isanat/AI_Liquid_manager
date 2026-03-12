@@ -133,14 +133,11 @@ class LiquidityStrategyModel:
     def _create_regime_model(self) -> lgb.LGBMClassifier:
         """Create the market regime classification model"""
         return lgb.LGBMClassifier(
-            objective='multiclass',
-            metric='multi_logloss',
-            num_class=4,  # trend, range, high-vol, low-vol
             num_leaves=self.config.regime_num_leaves,
             learning_rate=self.config.regime_learning_rate,
             n_estimators=self.config.regime_n_estimators,
             max_depth=self.config.regime_max_depth,
-            min_child_samples=20,
+            min_child_samples=5,
             subsample=0.8,
             colsample_bytree=0.8,
             reg_alpha=0.1,
@@ -295,12 +292,12 @@ class LiquidityStrategyModel:
         def_alloc = (def_alloc / total) * 95
         opp_alloc = (opp_alloc / total) * 95
         
-        # Predict regime
+        # Predict regime — map model classes back to regime enum
+        regime_pred = int(self.regime_model.predict(X_scaled)[0])
         regime_proba = self.regime_model.predict_proba(X_scaled)[0]
-        regime_idx = np.argmax(regime_proba)
-        regime_confidence = float(regime_proba[regime_idx])
-        regimes = [MarketRegime.TREND, MarketRegime.RANGE, MarketRegime.HIGH_VOL, MarketRegime.LOW_VOL]
-        detected_regime = regimes[regime_idx]
+        regime_confidence = float(np.max(regime_proba))
+        regime_map = {0: MarketRegime.TREND, 1: MarketRegime.RANGE, 2: MarketRegime.HIGH_VOL, 3: MarketRegime.LOW_VOL}
+        detected_regime = regime_map.get(regime_pred, MarketRegime.RANGE)
         
         # Calculate confidence based on prediction certainty
         alloc_std = np.std([core_alloc, def_alloc, opp_alloc])
