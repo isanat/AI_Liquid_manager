@@ -1,37 +1,22 @@
-# AI Liquidity Manager - Python Backend
-# Core ML
-lightgbm==4.3.0
-scikit-learn==1.4.0
-numpy==1.26.3
-pandas==2.2.0
-scipy==1.12.0
-
-# Data & API
+# AI Liquidity Manager - Minimal Requirements for Railway Deployment
+# Core
 fastapi==0.109.0
 uvicorn==0.27.0
 pydantic==2.5.3
+
+# HTTP
 httpx==0.26.0
-web3==6.15.1
 aiohttp==3.9.1
 
-# Database
-asyncpg==0.29.0
-sqlalchemy==2.0.25
-redis==5.0.1
-
-# Feature Engineering
-ta==0.11.0  # Technical analysis library
-statsmodels==0.14.1
-
-# Backtesting
-empyrical==0.5.5
-pyfolio==0.9.2
-
-# Monitoring
-prometheus-client==0.19.0
+# Logging
 structlog==24.1.0
 
 # Utils
 python-dotenv==1.0.0
 pyyaml==6.0.1
-joblib==1.3.2
+
+# Optional ML (can be added later)
+# lightgbm==4.3.0
+# scikit-learn==1.4.0
+# numpy==1.26.3
+# pandas==2.2.0

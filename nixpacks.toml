@@ -1,18 +1,16 @@
 # Nixpacks configuration for Railway
-# This file tells Railway how to build and run the app
+# Used when builder is set to NIXPACKS
 
 [phases.setup]
-nixPkgs = ['python311', 'gcc', 'postgresql', 'redis']
+nixPkgs = ['python311', 'gcc', 'libffi']
 
 [phases.install]
 cmds = ['pip install -r ai-engine/requirements.txt']
 
-[phases.build]
-cmds = ['python -c "import lightgbm; print(lightgbm.__version__)"']
-
 [start]
-cmd = 'python -m uvicorn ai-engine.api.main:app --host 0.0.0.0 --port $PORT'
+cmd = 'python -m uvicorn ai-engine.api.main:app --host 0.0.0.0 --port ${PORT:-8000}'
 
 [variables]
 PYTHONPATH = '/app'
 PYTHONDONTWRITEBYTECODE = '1'
+PYTHONUNBUFFERED = '1'

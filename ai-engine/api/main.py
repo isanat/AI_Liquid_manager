@@ -1,26 +1,23 @@
 """
 AI Liquidity Manager - FastAPI Service
-Simplified standalone version for deployment
+Simplified standalone version for Railway deployment
 """
 import os
 from datetime import datetime
 from typing import Optional, Dict, Any
-import structlog
+import logging
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
-# Setup logging
-structlog.configure(
-    processors=[
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.add_log_level,
-        structlog.dev.ConsoleFormatter()
-    ]
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = structlog.get_logger()
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI
 app = FastAPI(
@@ -188,7 +185,7 @@ async def root():
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    """Health check endpoint"""
+    """Health check endpoint for Railway"""
     return HealthResponse(
         status="healthy",
         model_loaded=False,
@@ -209,22 +206,17 @@ async def inference(data: MarketDataInput):
     - Detected market regime
     """
     try:
-        logger.info("Running inference", price=data.price, volume_24h=data.volume_24h)
+        logger.info(f"Running inference - price: {data.price}, volume_24h: {data.volume_24h}")
         
         # Use rule-based inference (can be replaced with ML model)
         output = rule_based_inference(data)
         
-        logger.info(
-            "Inference complete",
-            regime=output.detected_regime,
-            range_width=output.range_width,
-            confidence=output.confidence,
-        )
+        logger.info(f"Inference complete - regime: {output.detected_regime}, range_width: {output.range_width}")
         
         return output
         
     except Exception as e:
-        logger.error("Inference failed", error=str(e))
+        logger.error(f"Inference failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -247,7 +239,7 @@ async def inference_for_pool(pool_address: str):
         return rule_based_inference(data)
         
     except Exception as e:
-        logger.error("Pool inference failed", pool=pool_address, error=str(e))
+        logger.error(f"Pool inference failed for {pool_address}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -258,30 +250,24 @@ async def run_backtest(config: BacktestConfig):
     
     Returns performance metrics comparing LP strategy vs HODL.
     """
-    try:
-        import random
-        random.seed(42)
-        
-        # Simulated backtest results
-        days = config.days
-        base_return = 0.15 + random.random() * 0.25  # 15-40% annual
-        total_return = base_return * (days / 365)
-        
-        return BacktestResult(
-            total_return=total_return,
-            apr=base_return,
-            sharpe_ratio=1.5 + random.random() * 1.5,
-            max_drawdown=0.05 + random.random() * 0.10,
-            fees_collected=config.initial_capital * total_return * 0.3,
-            impermanent_loss=config.initial_capital * 0.02,
-            rebalance_count=random.randint(5, 20),
-            total_gas_cost=random.randint(5, 20),
-            vs_hodl=total_return - random.random() * 0.1,
-        )
-        
-    except Exception as e:
-        logger.error("Backtest failed", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    import random
+    random.seed(42)
+    
+    days = config.days
+    base_return = 0.15 + random.random() * 0.25  # 15-40% annual
+    total_return = base_return * (days / 365)
+    
+    return BacktestResult(
+        total_return=total_return,
+        apr=base_return,
+        sharpe_ratio=1.5 + random.random() * 1.5,
+        max_drawdown=0.05 + random.random() * 0.10,
+        fees_collected=config.initial_capital * total_return * 0.3,
+        impermanent_loss=config.initial_capital * 0.02,
+        rebalance_count=random.randint(5, 20),
+        total_gas_cost=random.randint(5, 20),
+        vs_hodl=total_return - random.random() * 0.1,
+    )
 
 
 @app.post("/train")
@@ -325,10 +311,10 @@ async def get_feature_importance():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
+    logger.info(f"Starting AI Liquidity Manager on port {port}")
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=port,
-        reload=True,
         log_level="info",
     )
