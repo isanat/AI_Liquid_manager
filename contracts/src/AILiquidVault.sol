@@ -104,10 +104,7 @@ contract AILiquidVault is ERC4626, Ownable2Step, ReentrancyGuard, Pausable {
     /// @dev Uniswap V3 NonfungiblePositionManager — same address on all EVM chains
     address public constant NPM = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
 
-    /// @dev USDC native on Arbitrum One
-    address public constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
-
-    /// @dev WETH on Arbitrum One
+    /// @dev WETH on Arbitrum One (used for LP position token1)
     address public constant WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
     uint256 public constant BPS_DENOMINATOR  = 10_000;
@@ -149,11 +146,17 @@ contract AILiquidVault is ERC4626, Ownable2Step, ReentrancyGuard, Pausable {
 
     // ── Constructor ────────────────────────────────────────────────────────────
 
-    constructor(address _strategyManager, address _feeRecipient)
-        ERC4626(IERC20(USDC))
+    /**
+     * @param _usdc            USDC token address (changes per network — see .env.example)
+     * @param _strategyManager Keeper EOA that can call rebalance/collectFees
+     * @param _feeRecipient    Address that receives management + performance fees
+     */
+    constructor(address _usdc, address _strategyManager, address _feeRecipient)
+        ERC4626(IERC20(_usdc))
         ERC20("AI Liquid Vault", "vAI")
         Ownable(msg.sender)
     {
+        require(_usdc            != address(0), "AILiquidVault: zero USDC");
         require(_strategyManager != address(0), "AILiquidVault: zero strategy manager");
         require(_feeRecipient    != address(0), "AILiquidVault: zero fee recipient");
         strategyManager  = _strategyManager;
@@ -168,7 +171,7 @@ contract AILiquidVault is ERC4626, Ownable2Step, ReentrancyGuard, Pausable {
      *         = idle USDC in this contract + capital deployed to LP positions.
      */
     function totalAssets() public view override returns (uint256) {
-        return IERC20(USDC).balanceOf(address(this)) + deployedCapital;
+        return IERC20(asset()).balanceOf(address(this)) + deployedCapital;
     }
 
     function deposit(uint256 assets, address receiver)
@@ -218,7 +221,7 @@ contract AILiquidVault is ERC4626, Ownable2Step, ReentrancyGuard, Pausable {
         require(tickLower < tickUpper, "AILiquidVault: invalid tick range");
         require(amount0Desired > 0,   "AILiquidVault: zero amount");
         require(
-            amount0Desired <= IERC20(USDC).balanceOf(address(this)),
+            amount0Desired <= IERC20(asset()).balanceOf(address(this)),
             "AILiquidVault: insufficient idle USDC"
         );
 
@@ -226,7 +229,7 @@ contract AILiquidVault is ERC4626, Ownable2Step, ReentrancyGuard, Pausable {
         _closeAllPositions();
 
         // 2. Approve and mint new LP position
-        IERC20(USDC).forceApprove(NPM, amount0Desired);
+        IERC20(asset()).forceApprove(NPM, amount0Desired);
         if (amount1Desired > 0) {
             require(
                 amount1Desired <= IERC20(WETH).balanceOf(address(this)),
@@ -237,7 +240,7 @@ contract AILiquidVault is ERC4626, Ownable2Step, ReentrancyGuard, Pausable {
 
         (uint256 tokenId, uint128 liquidity, uint256 used0,) = INonfungiblePositionManager(NPM).mint(
             MintParams({
-                token0:         USDC,
+                token0:         asset(),
                 token1:         WETH,
                 fee:            500,
                 tickLower:      tickLower,
@@ -255,7 +258,7 @@ contract AILiquidVault is ERC4626, Ownable2Step, ReentrancyGuard, Pausable {
         deployedCapital += used0;
 
         // Reset approvals
-        IERC20(USDC).forceApprove(NPM, 0);
+        IERC20(asset()).forceApprove(NPM, 0);
         if (amount1Desired > 0) IERC20(WETH).forceApprove(NPM, 0);
 
         activeTokenIds.push(tokenId);

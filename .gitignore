@@ -67,3 +67,9 @@ ai_engine/models/saved/
 
 # Development
 download/
+
+# Foundry (smart contracts) — reinstall with: cd contracts && forge install OpenZeppelin/openzeppelin-contracts
+contracts/lib/
+contracts/out/
+contracts/cache/
+contracts/.git/
