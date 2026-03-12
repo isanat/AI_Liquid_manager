@@ -15,6 +15,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw, ExternalLink, AlertTriangle, Activity } from 'lucide-react';
 import { VAULT_ADDRESS, VAULT_ABI } from '@/lib/vault-contract';
+import { ACTIVE_CHAIN_ID } from '@/components/wallet-connect';
+
+// Uniswap V3 position URL — arbitrum for mainnet, arbitrum_sepolia for testnet
+const UNISWAP_CHAIN_SLUG = ACTIVE_CHAIN_ID === 421614 ? 'arbitrum_sepolia' : 'arbitrum';
 import { NPM_ABI, NONFUNGIBLE_POSITION_MANAGER, tickToPrice } from '@/lib/uniswap-v3';
 import type { Address } from 'viem';
 import { formatUnits } from 'viem';
@@ -59,7 +63,7 @@ function PositionRow({ pos }: { pos: VaultPosition }) {
           className="h-7 text-xs text-zinc-400 hover:text-zinc-300"
           onClick={() =>
             window.open(
-              `https://app.uniswap.org/positions/v3/arbitrum/${pos.tokenId}`,
+              `https://app.uniswap.org/positions/v3/${UNISWAP_CHAIN_SLUG}/${pos.tokenId}`,
               '_blank',
               'noopener',
             )
