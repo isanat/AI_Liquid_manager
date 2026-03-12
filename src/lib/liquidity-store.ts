@@ -23,22 +23,26 @@ import type {
 // ── Static pool info (address is real) ───────────────────────────────────────
 
 const POOL_DATA: PoolData = {
-  address: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+  // ETH/USDC 0.05% pool on Arbitrum One (also correct for Arb Sepolia testnet equivalent)
+  address: '0xC6962004f452bE9203591991D15f6b388e09E8D0',
   token0: {
-    symbol: 'ETH',
-    name: 'Ethereum',
-    address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-    decimals: 18,
-    price: 1850,
-  },
-  token1: {
     symbol: 'USDC',
     name: 'USD Coin',
-    address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    // Arbitrum One USDC — overridden at runtime by NEXT_PUBLIC_CHAIN_ID
+    address: process.env.NEXT_PUBLIC_CHAIN_ID === '421614'
+      ? '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d'
+      : '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     decimals: 6,
     price: 1,
   },
-  fee: 3000,
+  token1: {
+    symbol: 'ETH',
+    name: 'Ethereum',
+    address: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', // WETH on Arbitrum
+    decimals: 18,
+    price: 2000, // placeholder — replaced by real data from API
+  },
+  fee: 500, // 0.05% fee tier (matches vault contract fee: 500)
   liquidity: 25_000_000,
   sqrtPriceX96: BigInt('2028240960365167041968'),
   tick: 85176,

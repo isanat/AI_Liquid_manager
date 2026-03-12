@@ -636,8 +636,18 @@ async def predict_for_keeper():
 @app.get("/keeper/status")
 async def keeper_status():
     """Returns last execution status of the on-chain keeper bot."""
-    from keeper.keeper import keeper_state
-    return keeper_state
+    import time
+    from keeper.keeper import keeper_state, REBALANCE_INTERVAL
+    state = dict(keeper_state)
+    # Add seconds until next scheduled run
+    last_ts = state.get("last_run_timestamp")
+    if last_ts and isinstance(last_ts, (int, float)):
+        elapsed = time.time() - last_ts
+        state["next_run_in_seconds"] = max(0, int(REBALANCE_INTERVAL - elapsed))
+    else:
+        state["next_run_in_seconds"] = None
+    state["interval_seconds"] = REBALANCE_INTERVAL
+    return state
 
 
 @app.get("/features/importance")

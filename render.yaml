@@ -78,6 +78,10 @@ services:
       - key: NEXT_PUBLIC_WC_PROJECT_ID
         value: 9a9a4ec5bde3ebded3da0745fbb6cad3
 
+      # ── AI engine URL exposed to browser (for keeper/status calls) ──
+      - key: NEXT_PUBLIC_AI_ENGINE_URL
+        value: https://ai-liquid-manager.onrender.com
+
       # ── RPC (public — pode usar Alchemy para produção) ──
       - key: NEXT_PUBLIC_RPC_ARBITRUM
         value: https://arb1.arbitrum.io/rpc
