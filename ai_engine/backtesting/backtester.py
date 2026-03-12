@@ -3,6 +3,14 @@ AI Liquidity Manager - Backtesting Framework
 
 Simulates LP performance with historical data to validate strategies.
 """
+import sys
+from pathlib import Path
+
+# Ensure ai_engine package root is importable
+_ai_engine = str(Path(__file__).resolve().parent.parent)
+if _ai_engine not in sys.path:
+    sys.path.insert(0, _ai_engine)
+
 import numpy as np
 import pandas as pd
 from typing import List, Dict, Optional, Tuple

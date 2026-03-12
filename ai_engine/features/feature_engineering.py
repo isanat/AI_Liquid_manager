@@ -3,6 +3,13 @@ AI Liquidity Manager - Feature Engineering
 
 Converts raw market data into ML features.
 """
+import sys
+from pathlib import Path as _Path
+
+_ai_engine = str(_Path(__file__).resolve().parent.parent)
+if _ai_engine not in sys.path:
+    sys.path.insert(0, _ai_engine)
+
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Dict, Any

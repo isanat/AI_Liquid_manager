@@ -1,34 +1,25 @@
-# AI Liquidity Manager - Dockerfile for Render
-# Render automatically provides $PORT environment variable
-
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for LightGBM
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONPATH=/app
-
-# Copy requirements first (better caching)
-COPY ai_engine/requirements.txt .
+# Install Python dependencies
+COPY ai_engine/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY ai_engine/ ./ai_engine/
 
-# Create models directory
-RUN mkdir -p /app/models/saved
+# Create model persistence directory
+RUN mkdir -p /app/ai_engine/models/saved
 
-# Health check - Render provides PORT automatically
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
-# Start the application
-# Python reads PORT from environment via os.getenv("PORT", "8000")
-CMD ["python", "-m", "ai_engine.api.main"]
+EXPOSE 8000
+
+CMD ["python", "-m", "uvicorn", "ai_engine.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
