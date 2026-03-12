@@ -3,7 +3,8 @@
  * Connects Next.js frontend to Python AI backend
  */
 
-const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000';
+// Use deployed AI Engine on Render by default, fallback to localhost for development
+const AI_ENGINE_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL || 'https://ai-liquid-manager.onrender.com';
 
 export interface MarketDataInput {
   price: number;
