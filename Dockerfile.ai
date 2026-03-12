@@ -1,25 +1,25 @@
 FROM python:3.11-slim
 
-WORKDIR /app
-
-# Install system dependencies for LightGBM
+# Install system deps for LightGBM
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgomp1 \
+    libgomp1 curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY ai_engine/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+WORKDIR /app
 
-# Copy application code
-COPY ai_engine/ ./ai_engine/
+# Install Python deps
+COPY ai_engine/requirements.txt ai_engine/requirements.txt
+RUN pip install --no-cache-dir -r ai_engine/requirements.txt
 
-# Create model persistence directory
-RUN mkdir -p /app/ai_engine/models/saved
+# Copy AI engine code
+COPY ai_engine/ ai_engine/
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
 
 CMD ["python", "-m", "uvicorn", "ai_engine.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
