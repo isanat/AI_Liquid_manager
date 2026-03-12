@@ -184,10 +184,17 @@ async def run_keeper_cycle(w3: AsyncWeb3, vault, keeper_account: str) -> dict:
 
     # ── 3. Parse strategy params ─────────────────────────────────────────────
     # Expected keys from /predict: current_price, range_width, core_pct, confidence
-    current_price = float(prediction.get("current_price", 2500))
-    range_width   = float(prediction.get("range_width",   0.06))  # ±6%
-    core_pct      = float(prediction.get("core_pct",      0.7))   # 70% of capital
-    confidence    = float(prediction.get("confidence",    0.72))
+    # current_price MUST come from the AI — no fallback to avoid deploying at stale price
+    if "current_price" not in prediction or not prediction["current_price"]:
+        result["error"] = "AI /predict missing current_price — refusing to rebalance"
+        logger.error(f"Keeper: {result['error']}")
+        await _collect_fees(vault, w3, keeper_account, result)  # still harvest fees
+        return result
+
+    current_price = float(prediction["current_price"])
+    range_width   = float(prediction.get("range_width", 0.06))   # ±6%
+    core_pct      = float(prediction.get("core_pct",    0.7))    # 70% of capital
+    confidence    = float(prediction.get("confidence",  0.0))
 
     lower_price = current_price * (1 - range_width)
     upper_price = current_price * (1 + range_width)
@@ -196,8 +203,10 @@ async def run_keeper_cycle(w3: AsyncWeb3, vault, keeper_account: str) -> dict:
     tick_upper = clamp_tick(nearest_usable_tick(price_to_tick(upper_price)))
 
     if tick_lower >= tick_upper:
-        result["error"] = f"Invalid tick range: {tick_lower} >= {tick_upper}"
+        result["error"] = f"Invalid tick range: {tick_lower} >= {tick_upper} (price={current_price}, width={range_width})"
         logger.error(f"Keeper: {result['error']}")
+        # Still collect fees even when range is invalid — capital stays idle until next cycle
+        await _collect_fees(vault, w3, keeper_account, result)
         return result
 
     # Amount of USDC to deploy (apply core_pct and usdc_pct safety limit)

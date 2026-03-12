@@ -16,8 +16,9 @@ logger = structlog.get_logger()
 # Uniswap V3 mainnet subgraph on The Graph decentralized network
 SUBGRAPH_ID = "5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV"
 
-# Default pool: ETH/USDC 0.3% on Ethereum mainnet
-DEFAULT_POOL = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
+# Default pool: ETH/USDC 0.05% on Arbitrum One.
+# Override via POOL_ADDRESS env var (required for non-Arbitrum deployments).
+DEFAULT_POOL = os.getenv("POOL_ADDRESS", "0xC6962004f452bE9203591991D15f6b388e09E8D0")
 
 
 def _build_gateway_url(api_key: str) -> str:

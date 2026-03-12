@@ -50,12 +50,14 @@ function PositionRow({
   onRemove,
   collecting,
   removing,
+  chainId,
 }: {
   pos: OnChainPosition;
   onCollect: (tokenId: bigint) => void;
   onRemove: (tokenId: bigint, liquidity: bigint) => void;
   collecting: boolean;
   removing: boolean;
+  chainId: number | undefined;
 }) {
   const feeLabel = `${pos.fee / 10000}%`;
   const hasFees = pos.tokensOwed0 > 0n || pos.tokensOwed1 > 0n;
@@ -98,7 +100,11 @@ function PositionRow({
             className="h-7 text-xs text-zinc-400 hover:text-zinc-300"
             onClick={() =>
               window.open(
-                `https://app.uniswap.org/positions/v3/ethereum/${pos.tokenId}`,
+                `https://app.uniswap.org/positions/v3/${
+                  chainId === 42161  ? 'arbitrum'  :
+                  chainId === 421614 ? 'arbitrum'  :
+                  chainId === 1      ? 'ethereum'  : 'arbitrum'
+                }/${pos.tokenId}`,
                 '_blank',
                 'noopener',
               )
@@ -201,22 +207,33 @@ export function UniswapPositions() {
   };
 
   const handleRemove = async (tokenId: bigint, liquidity: bigint) => {
-    if (!walletClient || !address) return;
+    if (!walletClient || !address || !publicClient) return;
     setActionPending({ id: tokenId, type: 'remove' });
     setTxHash(null);
     try {
-      // 1. decrease all liquidity
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
+      const SLIPPAGE_BPS = 50n; // 0.5% slippage tolerance
+
+      // 1a. Simulate to get expected token amounts (no state change)
+      const { result } = await publicClient.simulateContract({
+        address: npm,
+        abi: NPM_ABI,
+        functionName: 'decreaseLiquidity',
+        args: [{ tokenId, liquidity, amount0Min: 0n, amount1Min: 0n, deadline }],
+        account: address as Address,
+      });
+      const [amount0Expected, amount1Expected] = result as [bigint, bigint];
+
+      // 1b. Apply 0.5% slippage to computed minimums
+      const amount0Min = amount0Expected * (10000n - SLIPPAGE_BPS) / 10000n;
+      const amount1Min = amount1Expected * (10000n - SLIPPAGE_BPS) / 10000n;
+
+      // 1c. Decrease all liquidity with slippage protection
       const hash1 = await walletClient.writeContract({
         address: npm,
         abi: NPM_ABI,
         functionName: 'decreaseLiquidity',
-        args: [{
-          tokenId,
-          liquidity,
-          amount0Min: 0n,
-          amount1Min: 0n,
-          deadline: BigInt(Math.floor(Date.now() / 1000) + 1200),
-        }],
+        args: [{ tokenId, liquidity, amount0Min, amount1Min, deadline }],
         account: address as Address,
         chain: walletClient.chain ?? null,
       });
@@ -306,6 +323,7 @@ export function UniswapPositions() {
               removing={actionPending?.id === pos.tokenId && actionPending.type === 'remove'}
               onCollect={handleCollect}
               onRemove={handleRemove}
+              chainId={chainId}
             />
           ))
         )}
