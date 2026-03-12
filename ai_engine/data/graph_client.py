@@ -19,6 +19,34 @@ SUBGRAPH_ID = "5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV"
 # Default pool: ETH/USDC 0.3% on Ethereum mainnet
 DEFAULT_POOL = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
 
+
+def _build_gateway_url(api_key: str) -> str:
+    return f"https://gateway.thegraph.com/api/{api_key}/subgraphs/id/{SUBGRAPH_ID}"
+
+
+def _get_subgraph_urls() -> list[str]:
+    """
+    Returns candidate subgraph URLs in priority order.
+    - THE_GRAPH_API_KEY  → primary authenticated endpoint
+    - THE_GRAPH_API_KEY2 → optional second key as hot standby
+    - Public gateway     → always present as last resort (rate-limited)
+    """
+    urls = []
+
+    key1 = os.getenv("THE_GRAPH_API_KEY", "").strip()
+    if key1:
+        urls.append(_build_gateway_url(key1))
+
+    key2 = os.getenv("THE_GRAPH_API_KEY2", "").strip()
+    if key2:
+        urls.append(_build_gateway_url(key2))
+
+    # Public gateway — always available, no key, rate-limited
+    urls.append(
+        f"https://gateway-arbitrum.network.thegraph.com/api/public/subgraphs/id/{SUBGRAPH_ID}"
+    )
+    return urls
+
 # Popular pools available for analysis
 KNOWN_POOLS = {
     "eth-usdc-0.3": "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8",
@@ -29,12 +57,31 @@ KNOWN_POOLS = {
 }
 
 
-def _get_subgraph_url() -> str:
-    api_key = os.getenv("THE_GRAPH_API_KEY", "").strip()
-    if api_key:
-        return f"https://gateway.thegraph.com/api/{api_key}/subgraphs/id/{SUBGRAPH_ID}"
-    # Public endpoint — rate limited but functional for development
-    return f"https://gateway-arbitrum.network.thegraph.com/api/public/subgraphs/id/{SUBGRAPH_ID}"
+async def _graph_post(query: str) -> Optional[Dict[str, Any]]:
+    """
+    POST a GraphQL query trying each URL in _get_subgraph_urls() until one succeeds.
+    Returns parsed .data dict or None on total failure.
+    """
+    last_error: str = ""
+    for url in _get_subgraph_urls():
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                response = await client.post(url, json={"query": query})
+                response.raise_for_status()
+                payload = response.json()
+                if "errors" in payload:
+                    last_error = str(payload["errors"])
+                    continue  # try next endpoint
+                return payload.get("data")
+        except httpx.TimeoutException:
+            last_error = "timeout"
+        except httpx.HTTPStatusError as e:
+            last_error = f"HTTP {e.response.status_code}"
+        except Exception as e:
+            last_error = str(e)
+
+    logger.warning("All Graph endpoints failed", last_error=last_error)
+    return None
 
 
 async def fetch_pool_hour_data(
@@ -42,13 +89,9 @@ async def fetch_pool_hour_data(
     hours: int = 168,
 ) -> List[Dict[str, Any]]:
     """
-    Fetch hourly pool snapshots from The Graph.
-
-    Returns list sorted oldest→newest with keys:
-        periodStartUnix, tvlUSD, volumeUSD, feesUSD,
-        token0Price, token1Price, liquidity, open, high, low, close
+    Fetch hourly pool snapshots (oldest→newest).
+    Tries primary key → secondary key → public gateway automatically.
     """
-    url = _get_subgraph_url()
     query = """{
       poolHourDatas(
         where: { pool: "%s" }
@@ -56,40 +99,18 @@ async def fetch_pool_hour_data(
         orderDirection: desc
         first: %d
       ) {
-        periodStartUnix
-        tvlUSD
-        volumeUSD
-        feesUSD
-        token0Price
-        token1Price
-        liquidity
-        open
-        high
-        low
-        close
+        periodStartUnix tvlUSD volumeUSD feesUSD
+        token0Price token1Price liquidity
+        open high low close
       }
     }""" % (pool_address.lower(), hours)
 
-    try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.post(url, json={"query": query})
-            response.raise_for_status()
-            data = response.json()
-
-        if "errors" in data:
-            logger.warning("GraphQL errors in poolHourDatas", errors=data["errors"])
-            return []
-
-        rows = data.get("data", {}).get("poolHourDatas", [])
-        rows.reverse()  # oldest first
-        return rows
-
-    except httpx.TimeoutException:
-        logger.warning("The Graph request timed out", pool=pool_address)
+    data = await _graph_post(query)
+    if not data:
         return []
-    except Exception as e:
-        logger.error("Failed to fetch pool hour data", pool=pool_address, error=str(e))
-        return []
+    rows = data.get("poolHourDatas", [])
+    rows.reverse()
+    return rows
 
 
 async def fetch_pool_day_data(
@@ -97,13 +118,9 @@ async def fetch_pool_day_data(
     days: int = 90,
 ) -> List[Dict[str, Any]]:
     """
-    Fetch daily pool snapshots for backtesting.
-
-    Returns list sorted oldest→newest with keys:
-        date (unix timestamp), tvlUSD, volumeUSD, feesUSD,
-        token0Price, token1Price, liquidity, open, high, low, close, txCount
+    Fetch daily pool snapshots for backtesting (oldest→newest).
+    Tries primary key → secondary key → public gateway automatically.
     """
-    url = _get_subgraph_url()
     query = """{
       poolDayDatas(
         where: { pool: "%s" }
@@ -111,87 +128,37 @@ async def fetch_pool_day_data(
         orderDirection: desc
         first: %d
       ) {
-        date
-        tvlUSD
-        volumeUSD
-        feesUSD
-        token0Price
-        token1Price
-        liquidity
-        open
-        high
-        low
-        close
-        txCount
+        date tvlUSD volumeUSD feesUSD
+        token0Price token1Price liquidity
+        open high low close txCount
       }
     }""" % (pool_address.lower(), days)
 
-    try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            response = await client.post(url, json={"query": query})
-            response.raise_for_status()
-            data = response.json()
-
-        if "errors" in data:
-            logger.warning("GraphQL errors in poolDayDatas", errors=data["errors"])
-            return []
-
-        rows = data.get("data", {}).get("poolDayDatas", [])
-        rows.reverse()  # oldest first
-        return rows
-
-    except httpx.TimeoutException:
-        logger.warning("The Graph day data request timed out", pool=pool_address)
+    data = await _graph_post(query)
+    if not data:
         return []
-    except Exception as e:
-        logger.error("Failed to fetch pool day data", pool=pool_address, error=str(e))
-        return []
+    rows = data.get("poolDayDatas", [])
+    rows.reverse()
+    return rows
 
 
 async def fetch_pool_state(pool_address: str = DEFAULT_POOL) -> Optional[Dict[str, Any]]:
     """
-    Fetch current pool state (latest snapshot) from The Graph.
-
-    Returns dict with: sqrtPrice, tick, liquidity, token0Price, token1Price,
-        volumeUSD, feesUSD, txCount, totalValueLockedUSD, feeTier,
-        token0 {symbol, decimals}, token1 {symbol, decimals}
+    Fetch current pool state.
+    Tries primary key → secondary key → public gateway automatically.
     """
-    url = _get_subgraph_url()
     query = """{
       pool(id: "%s") {
-        sqrtPrice
-        tick
-        liquidity
-        token0Price
-        token1Price
-        volumeUSD
-        feesUSD
-        txCount
-        totalValueLockedUSD
-        feeTier
+        sqrtPrice tick liquidity
+        token0Price token1Price
+        totalValueLockedUSD volumeUSD feesUSD feeTier txCount
         token0 { symbol decimals }
         token1 { symbol decimals }
       }
     }""" % pool_address.lower()
 
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(url, json={"query": query})
-            response.raise_for_status()
-            data = response.json()
-
-        if "errors" in data:
-            logger.warning("GraphQL errors in pool query", errors=data["errors"])
-            return None
-
-        return data.get("data", {}).get("pool")
-
-    except httpx.TimeoutException:
-        logger.warning("The Graph pool state request timed out", pool=pool_address)
-        return None
-    except Exception as e:
-        logger.error("Failed to fetch pool state", pool=pool_address, error=str(e))
-        return None
+    data = await _graph_post(query)
+    return data.get("pool") if data else None
 
 
 async def fetch_recent_swaps(
@@ -199,10 +166,9 @@ async def fetch_recent_swaps(
     limit: int = 100,
 ) -> List[Dict[str, Any]]:
     """
-    Fetch recent swap events for a pool.
+    Fetch recent swap events (oldest→newest).
     Useful for computing realized volatility and volume velocity.
     """
-    url = _get_subgraph_url()
     query = """{
       swaps(
         where: { pool: "%s" }
@@ -210,28 +176,13 @@ async def fetch_recent_swaps(
         orderDirection: desc
         first: %d
       ) {
-        timestamp
-        amount0
-        amount1
-        amountUSD
-        sqrtPriceX96
-        tick
+        timestamp amount0 amount1 amountUSD sqrtPriceX96 tick
       }
     }""" % (pool_address.lower(), limit)
 
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(url, json={"query": query})
-            response.raise_for_status()
-            data = response.json()
-
-        if "errors" in data:
-            return []
-
-        swaps = data.get("data", {}).get("swaps", [])
-        swaps.reverse()
-        return swaps
-
-    except Exception as e:
-        logger.error("Failed to fetch swaps", pool=pool_address, error=str(e))
+    data = await _graph_post(query)
+    if not data:
         return []
+    swaps = data.get("swaps", [])
+    swaps.reverse()
+    return swaps

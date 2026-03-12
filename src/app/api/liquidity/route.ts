@@ -14,12 +14,15 @@ import { NextResponse } from 'next/server';
 const SUBGRAPH_ID = '5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV';
 const DEFAULT_POOL = '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8'; // ETH/USDC 0.3%
 
-function getSubgraphUrl(): string {
-  const key = process.env.THE_GRAPH_API_KEY?.trim();
-  if (key) {
-    return `https://gateway.thegraph.com/api/${key}/subgraphs/id/${SUBGRAPH_ID}`;
-  }
-  return `https://gateway-arbitrum.network.thegraph.com/api/public/subgraphs/id/${SUBGRAPH_ID}`;
+function getSubgraphUrls(): string[] {
+  const urls: string[] = [];
+  const key1 = process.env.THE_GRAPH_API_KEY?.trim();
+  const key2 = process.env.THE_GRAPH_API_KEY2?.trim();
+  if (key1) urls.push(`https://gateway.thegraph.com/api/${key1}/subgraphs/id/${SUBGRAPH_ID}`);
+  if (key2) urls.push(`https://gateway.thegraph.com/api/${key2}/subgraphs/id/${SUBGRAPH_ID}`);
+  // Public gateway always last
+  urls.push(`https://gateway-arbitrum.network.thegraph.com/api/public/subgraphs/id/${SUBGRAPH_ID}`);
+  return urls;
 }
 
 // ── GraphQL helpers ───────────────────────────────────────────────────────────
@@ -53,20 +56,23 @@ interface PoolState {
 }
 
 async function graphQuery<T>(query: string): Promise<T | null> {
-  try {
-    const res = await fetch(getSubgraphUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-      next: { revalidate: 60 }, // Next.js cache: 60 s
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (json.errors) return null;
-    return json.data as T;
-  } catch {
-    return null;
+  for (const url of getSubgraphUrls()) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+        next: { revalidate: 60 },
+      });
+      if (!res.ok) continue;
+      const json = await res.json();
+      if (json.errors) continue; // try next endpoint
+      return json.data as T;
+    } catch {
+      // try next
+    }
   }
+  return null;
 }
 
 async function fetchHourData(pool: string, hours = 48): Promise<HourRow[]> {
@@ -239,15 +245,33 @@ function calculateRanges(price: number, alloc: { core: number; defensive: number
   ];
 }
 
-// ── Static fallback (used only when The Graph is unreachable) ─────────────────
+// ── CoinGecko price fallback (free, no key, 30 req/min) ──────────────────────
 
-function staticFallback() {
-  const price = 1850;
+async function fetchCoinGeckoPrice(): Promise<number | null> {
+  try {
+    const res = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+      { next: { revalidate: 120 } },
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.ethereum?.usd ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Static fallback (used only when all data sources are unreachable) ─────────
+
+async function buildFallback() {
+  // Try CoinGecko for at least a real price
+  const cgPrice = await fetchCoinGeckoPrice();
+  const price = cgPrice ?? 1850;
   const volatility1d = 0.035;
   return {
     timestamp: new Date().toISOString(),
     price,
-    tick: 85176,
+    tick: Math.floor(Math.log(price) / Math.log(1.0001)),
     twap: price,
     twap1h: price,
     twap24h: price,
@@ -264,7 +288,7 @@ function staticFallback() {
     atr: price * volatility1d,
     stdDeviation: volatility1d * price,
     feesUSD24h: 36_000,
-    dataSource: 'fallback',
+    dataSource: cgPrice ? 'coingecko-price' : 'static-fallback',
     poolAddress: DEFAULT_POOL,
   };
 }
@@ -284,7 +308,7 @@ export async function GET(request: Request) {
 
   const market = rows.length > 0
     ? buildMarketData(rows, state)
-    : staticFallback();
+    : await buildFallback();
 
   switch (action) {
     case 'market':
