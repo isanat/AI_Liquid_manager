@@ -63,6 +63,7 @@ import { Separator } from '@/components/ui/separator';
 import { useLiquidityStore } from '@/lib/liquidity-store';
 import { cn } from '@/lib/utils';
 import { WalletConnect } from '@/components/wallet-connect';
+import { NetworkGuard } from '@/components/network-guard';
 import { UniswapPositions } from '@/components/uniswap-positions';
 import { OpenPositionModal } from '@/components/open-position-modal';
 import { useToast } from '@/hooks/use-toast';
@@ -1298,7 +1299,10 @@ export default function LiquidityManagerDashboard() {
           </div>
         </div>
       </header>
-      
+
+      {/* Network guard — wrong network banner + balance checklist */}
+      <NetworkGuard />
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-6">
         {/* Metrics Row */}
