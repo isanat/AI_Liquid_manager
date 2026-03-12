@@ -17,8 +17,19 @@ import { parseUnits, formatUnits } from 'viem';
 
 export const VAULT_ADDRESS = (process.env.NEXT_PUBLIC_VAULT_ADDRESS ?? '') as Address;
 
-/** USDC native on Arbitrum One */
-export const USDC_ARBITRUM = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as Address;
+/** USDC native on Arbitrum One (production) */
+export const USDC_ARBITRUM_ONE    = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as Address;
+/** Circle testnet USDC on Arbitrum Sepolia */
+export const USDC_ARBITRUM_SEPOLIA = '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d' as Address;
+
+/**
+ * Active USDC address — driven by NEXT_PUBLIC_CHAIN_ID env var.
+ * Default: Arbitrum One (production). Set NEXT_PUBLIC_CHAIN_ID=421614 for testnet.
+ */
+export const USDC_ARBITRUM: Address =
+  process.env.NEXT_PUBLIC_CHAIN_ID === '421614'
+    ? USDC_ARBITRUM_SEPOLIA
+    : USDC_ARBITRUM_ONE;
 
 // ─── ABI ─────────────────────────────────────────────────────────────────────
 

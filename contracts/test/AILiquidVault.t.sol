@@ -34,7 +34,7 @@ contract AILiquidVaultTest is Test {
 
     function setUp() public {
         vm.startPrank(owner);
-        vault = new AILiquidVault(keeper, feeDest);
+        vault = new AILiquidVault(USDC, keeper, feeDest);
         vm.stopPrank();
 
         // Give alice and bob USDC by impersonating a known whale

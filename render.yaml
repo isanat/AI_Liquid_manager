@@ -3,12 +3,12 @@
 
 services:
   # ============================================
-  # AI Engine - Python FastAPI
+  # AI Engine - Python FastAPI + Keeper Bot
   # ============================================
   - type: web
     name: ai-liquidity-engine
     env: python
-    region: oregon # or oregon, frankfurt, singapore
+    region: oregon
     plan: free
     buildCommand: pip install -r ai_engine/requirements.txt
     startCommand: python -m uvicorn ai_engine.api.main:app --host 0.0.0.0 --port $PORT
@@ -20,10 +20,26 @@ services:
         value: "1"
       - key: PYTHONPATH
         value: /opt/render/project/src
+
+      # ── The Graph API keys ──
       - key: THE_GRAPH_API_KEY
-        value: server_7f90e2479fa2385aa72a55ca3fd847cc
+        value: bb60df2c64bb3cfe2c8662b74bcb7276
       - key: THE_GRAPH_API_KEY2
-        value: servidor_1ed6c55d924ac2041aae14ae78638aa1
+        value: 4406f8139d6b9ab212d613efbd414988
+
+      # ── Smart contract (AILiquidVault on Arbitrum Sepolia) ──
+      - key: VAULT_ADDRESS
+        value: 0xF9FD652453801749768e5660bbE624Ee90bE39a3
+
+      # ── RPC endpoints ──
+      - key: RPC_URL_ARBITRUM
+        value: https://arb1.arbitrum.io/rpc
+      - key: RPC_URL_ARBITRUM_SEPOLIA
+        value: https://sepolia-rollup.arbitrum.io/rpc
+
+      # ── Keeper wallet private key (set manually in Render dashboard — never commit the real value) ──
+      - key: KEEPER_PRIVATE_KEY
+        sync: false
 
   # ============================================
   # Frontend - Next.js
@@ -33,45 +49,37 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: bun install && bun run build
-    startCommand: node server.js
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
+
+      # ── AI engine URL (auto-linked from sibling service) ──
       - key: AI_ENGINE_URL
         fromService:
           name: ai-liquidity-engine
           type: web
           property: url
+
+      # ── The Graph API keys ──
       - key: THE_GRAPH_API_KEY
-        value: server_7f90e2479fa2385aa72a55ca3fd847cc
+        value: bb60df2c64bb3cfe2c8662b74bcb7276
       - key: THE_GRAPH_API_KEY2
-        value: servidor_1ed6c55d924ac2041aae14ae78638aa1
+        value: 4406f8139d6b9ab212d613efbd414988
 
-  # ============================================
-  # PostgreSQL Database
-  # ============================================
-  - type: pserv
-    name: liquidity-db
-    env: docker
-    region: oregon
-    plan: free
-    envVars:
-      - key: POSTGRES_USER
-        value: liquidity
-      - key: POSTGRES_PASSWORD
-        generateValue: true
-      - key: POSTGRES_DB
-        value: liquidity_manager
+      # ── Smart contract ──
+      - key: NEXT_PUBLIC_VAULT_ADDRESS
+        value: 0xF9FD652453801749768e5660bbE624Ee90bE39a3
+      - key: NEXT_PUBLIC_CHAIN_ID
+        value: "421614"
 
-  # ============================================
-  # Redis Cache
-  # ============================================
-  - type: pserv
-    name: liquidity-redis
-    env: docker
-    region: oregon
-    plan: free
-    envVars:
-      - key: REDIS_PASSWORD
-        generateValue: true
+      # ── WalletConnect ──
+      - key: NEXT_PUBLIC_WC_PROJECT_ID
+        value: 9a9a4ec5bde3ebded3da0745fbb6cad3
+
+      # ── RPC (public — pode usar Alchemy para produção) ──
+      - key: NEXT_PUBLIC_RPC_ARBITRUM
+        value: https://arb1.arbitrum.io/rpc
+      - key: NEXT_PUBLIC_RPC_ARBITRUM_SEPOLIA
+        value: https://sepolia-rollup.arbitrum.io/rpc
