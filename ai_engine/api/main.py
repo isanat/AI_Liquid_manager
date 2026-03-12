@@ -612,6 +612,8 @@ async def feature_importance():
 async def _startup():
     global _strategy_model, _model_version
     save_path = Path(__file__).parent.parent / "models" / "saved"
+
+    # 1. Try to load a previously saved model first (fastest)
     if save_path.exists():
         try:
             from models.strategy_model import LiquidityStrategyModel
@@ -620,8 +622,93 @@ async def _startup():
             _strategy_model = model
             _model_version = "lgbm-v1-loaded"
             logger.info(f"Loaded saved model path={save_path}")
+            return
         except Exception as e:
-            logger.info(f"No saved model, using rule-based fallback: {e}")
+            logger.info(f"No saved model or load failed: {e}")
+
+    # 2. No saved model — auto-train in background using CoinGecko data
+    logger.info("No saved model found — auto-training with CoinGecko data (background)")
+    import asyncio
+    asyncio.create_task(_auto_train())
+
+
+async def _auto_train():
+    """Train model at startup using CoinGecko data (no API key needed)."""
+    global _strategy_model, _model_version
+    try:
+        import numpy as np
+        import pandas as pd
+        from backtesting.backtester import generate_synthetic_history
+        from features.feature_engineering import FeatureEngineer
+        from models.strategy_model import LiquidityStrategyModel, RuleBasedFallback
+        from models.types import MarketRegime
+
+        # Fetch real data
+        df = await _fetch_coingecko_history(days=365)
+        data_source = "coingecko"
+        if df is None or len(df) < 20:
+            logger.warning("CoinGecko unavailable at startup — using synthetic data")
+            df = generate_synthetic_history(days=365, volatility=0.04)
+            data_source = "synthetic"
+
+        logger.info(f"Auto-train: {len(df)} rows from {data_source}")
+
+        fe = FeatureEngineer()
+        X_rows, y_range_rows, y_alloc_rows, y_regime_rows = [], [], [], []
+        regime_map = {
+            MarketRegime.TREND: 0, MarketRegime.RANGE: 1,
+            MarketRegime.HIGH_VOL: 2, MarketRegime.LOW_VOL: 3,
+        }
+
+        for _, row in df.iterrows():
+            price = float(row["price"])
+            if price <= 0:
+                continue
+            vol24 = float(row.get("volume_24h", 0))
+            liq   = float(row.get("liquidity", 0))
+            fees  = float(row.get("fees_24h", 0))
+            ts    = row["timestamp"]
+            fe.update(price=price, volume_24h=vol24, liquidity=liq, fees_24h=fees, timestamp=ts)
+            if len(fe.price_history) < 5:
+                continue
+            features = fe.compute_features(
+                current_price=price,
+                current_tick=int(np.log(price) / np.log(1.0001)),
+                total_liquidity=liq,
+                active_liquidity=liq * 0.5,
+                volume_1h=vol24 / 24,
+                volume_24h=vol24,
+                timestamp=ts,
+            )
+            X_rows.append(features.to_array())
+            rb = RuleBasedFallback.predict(features)
+            y_range_rows.append(rb.range_width)
+            y_alloc_rows.append([rb.core_allocation, rb.defensive_allocation, rb.opportunistic_allocation])
+            y_regime_rows.append(int(regime_map.get(rb.detected_regime, 1)))
+
+        if len(X_rows) < 20:
+            logger.error(f"Auto-train: not enough samples ({len(X_rows)}), keeping rule-based")
+            return
+
+        X        = np.array(X_rows)
+        y_range  = np.array(y_range_rows, dtype=np.float64)
+        y_alloc  = np.array(y_alloc_rows, dtype=np.float64)
+        y_regime = np.clip(np.array(y_regime_rows, dtype=np.int32), 0, 3)
+
+        model = LiquidityStrategyModel()
+        model.train(X, y_range, y_alloc, y_regime)
+
+        # Save so next restart loads instantly
+        save_path = Path(__file__).parent.parent / "models" / "saved"
+        save_path.mkdir(parents=True, exist_ok=True)
+        model.save(save_path)
+
+        _strategy_model = model
+        _model_version = f"lgbm-v1-{data_source}-auto"
+        logger.info(f"Auto-train complete: {len(X_rows)} samples, source={data_source}, version={_model_version}")
+
+    except Exception as e:
+        logger.error(f"Auto-train failed: {e}")
 
 
 if __name__ == "__main__":
