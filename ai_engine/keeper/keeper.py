@@ -107,13 +107,17 @@ ERC20_ABI = [
 
 # ─── Keeper state (kept in memory; FastAPI /keeper/status reads this) ─────────
 
+# Keeper interval in seconds (exported for /keeper/status endpoint)
+REBALANCE_INTERVAL = int(os.getenv("REBALANCE_INTERVAL", "15")) * 60  # default 15 min
+
 keeper_state: dict = {
-    "last_run":      None,
-    "last_tx_hash":  None,
-    "last_error":    None,
-    "total_runs":    0,
-    "total_rebalances": 0,
-    "status":        "idle",
+    "last_run":              None,   # ISO timestamp
+    "last_run_timestamp":    None,   # Unix epoch float (for next_run_in_seconds calc)
+    "last_tx_hash":          None,
+    "last_error":            None,
+    "total_runs":            0,
+    "total_rebalances":      0,
+    "status":                "idle",
 }
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -304,9 +308,10 @@ async def keeper_job() -> None:
     global keeper_state
 
     logger.info("Keeper: starting cycle")
-    keeper_state["status"]   = "running"
-    keeper_state["last_run"] = datetime.now(timezone.utc).isoformat()
-    keeper_state["total_runs"] += 1
+    keeper_state["status"]            = "running"
+    keeper_state["last_run"]          = datetime.now(timezone.utc).isoformat()
+    keeper_state["last_run_timestamp"] = time.time()
+    keeper_state["total_runs"]        += 1
 
     # Setup web3
     rpc_url = os.getenv("RPC_URL_ARBITRUM")

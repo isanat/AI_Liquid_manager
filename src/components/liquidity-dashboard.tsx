@@ -465,6 +465,27 @@ function StrategyController() {
   const { currentCycle, startCycle, executeRebalance, updateMarketData, systemStatus } = useLiquidityStore();
   const { toast } = useToast();
   const [cyclePhase, setCyclePhase] = useState(0);
+  const [keeperStatus, setKeeperStatus] = useState<{ last_run?: string; next_run_in_seconds?: number } | null>(null);
+
+  // Fetch real keeper status from backend
+  useEffect(() => {
+    const AI_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL ?? '';
+    if (!AI_URL) return;
+    const fetch_ = () =>
+      fetch(`${AI_URL}/keeper/status`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => d && setKeeperStatus(d))
+        .catch(() => null);
+    fetch_();
+    const iv = setInterval(fetch_, 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const nextRunLabel = keeperStatus?.next_run_in_seconds != null
+    ? keeperStatus.next_run_in_seconds < 60
+      ? `In ${keeperStatus.next_run_in_seconds}s`
+      : `In ${Math.round(keeperStatus.next_run_in_seconds / 60)}min`
+    : '—';
 
   const phases = [
     { name: 'Data Collection', icon: Activity, key: 'data-collection' },
@@ -577,11 +598,13 @@ function StrategyController() {
         <div className="grid grid-cols-2 gap-2">
           <div className="text-xs">
             <p className="text-muted-foreground">Cycle Interval</p>
-            <p className="font-medium">15 minutes</p>
+            <p className="font-medium">
+              {keeperStatus ? `${Math.round((keeperStatus as { interval_seconds?: number }).interval_seconds ?? 900 / 60)} min` : '15 min'}
+            </p>
           </div>
           <div className="text-xs">
             <p className="text-muted-foreground">Next Run</p>
-            <p className="font-medium">In 8 min</p>
+            <p className="font-medium">{nextRunLabel}</p>
           </div>
         </div>
         
@@ -934,9 +957,9 @@ function ExecutionEngine() {
         <OpenPositionModal
           open={openPositionModal}
           onClose={() => setOpenPositionModal(false)}
-          currentPrice={marketData?.price ?? 1850}
-          aiRangeWidth={aiOutputs?.rangeWidth ?? 7}
-          aiConfidence={aiOutputs?.confidence ?? 0.72}
+          currentPrice={marketData?.price ?? 0}
+          aiRangeWidth={aiOutputs?.rangeWidth ?? 0}
+          aiConfidence={aiOutputs?.confidence ?? 0}
         />
       </CardContent>
     </Card>
@@ -1038,16 +1061,52 @@ function RiskDashboard() {
   );
 }
 
-// Price Chart Component
+// Price Chart Component — fetches real 24h price history from CoinGecko
 function PriceChart() {
   const { marketData } = useLiquidityStore();
-  
-  // Generate mock price history
-  const priceHistory = Array.from({ length: 48 }, (_, i) => ({
-    time: new Date(Date.now() - (47 - i) * 3600000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-    price: marketData.price * (0.98 + Math.random() * 0.04),
-    volume: 500000 + Math.random() * 500000,
-  }));
+  const [priceHistory, setPriceHistory] = useState<{ time: string; price: number; volume: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchHistory() {
+      try {
+        // CoinGecko free API — hourly data for last 24h
+        const res = await fetch(
+          'https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=1&interval=hourly',
+          { headers: { Accept: 'application/json' } }
+        );
+        if (!res.ok) throw new Error('CoinGecko error');
+        const json = await res.json();
+        if (cancelled) return;
+        const prices:  [number, number][] = json.prices  ?? [];
+        const volumes: [number, number][] = json.total_volumes ?? [];
+        const history = prices.map(([ts, price], i) => ({
+          time:   new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          price,
+          volume: volumes[i]?.[1] ?? 0,
+        }));
+        setPriceHistory(history);
+      } catch {
+        // Fallback: use current price to build a flat line (no random noise)
+        if (cancelled) return;
+        const p = marketData.price || 2000;
+        setPriceHistory(
+          Array.from({ length: 24 }, (_, i) => ({
+            time:   new Date(Date.now() - (23 - i) * 3600000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            price:  p,
+            volume: 0,
+          }))
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchHistory();
+    // Refresh every 5 minutes
+    const iv = setInterval(fetchHistory, 300_000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [marketData.price]);
   
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm col-span-full lg:col-span-2">
@@ -1065,12 +1124,17 @@ function PriceChart() {
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-2xl font-bold">${marketData.price.toFixed(2)}</p>
-              <p className="text-sm text-muted-foreground">Current Price</p>
+              <p className="text-xs text-zinc-500">CoinGecko live</p>
             </div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
+        {loading ? (
+          <div className="flex items-center justify-center h-[200px] text-zinc-500 text-sm gap-2">
+            <RefreshCw className="h-4 w-4 animate-spin" /> Loading price history…
+          </div>
+        ) : (
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={priceHistory}>
             <defs>
@@ -1110,6 +1174,7 @@ function PriceChart() {
             />
           </AreaChart>
         </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );

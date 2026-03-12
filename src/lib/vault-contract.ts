@@ -35,16 +35,16 @@ export const USDC_ARBITRUM: Address =
 
 export const VAULT_ABI = [
   // ── ERC-20 (shares) ──
-  { name: 'name',        type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'string' }] },
-  { name: 'symbol',      type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'string' }] },
-  { name: 'decimals',    type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8'  }] },
+  { name: 'name',        type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'string'  }] },
+  { name: 'symbol',      type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'string'  }] },
+  { name: 'decimals',    type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8'   }] },
   { name: 'totalSupply', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
   {
     name: 'balanceOf', type: 'function', stateMutability: 'view',
     inputs: [{ name: 'account', type: 'address' }],
     outputs: [{ type: 'uint256' }],
   },
-  // ── ERC-4626 ──
+  // ── ERC-4626 read ──
   { name: 'asset',       type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'address' }] },
   { name: 'totalAssets', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
   {
@@ -57,11 +57,23 @@ export const VAULT_ABI = [
     inputs: [{ name: 'shares', type: 'uint256' }],
     outputs: [{ type: 'uint256' }],
   },
+  // ── ERC-4626 write ──
   {
     name: 'deposit', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'assets', type: 'uint256' }, { name: 'receiver', type: 'address' }],
+    outputs: [{ name: 'shares', type: 'uint256' }],
+  },
+  {
+    name: 'mint', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'shares', type: 'uint256' }, { name: 'receiver', type: 'address' }],
+    outputs: [{ name: 'assets', type: 'uint256' }],
+  },
+  {
+    name: 'withdraw', type: 'function', stateMutability: 'nonpayable',
     inputs: [
       { name: 'assets',   type: 'uint256' },
       { name: 'receiver', type: 'address' },
+      { name: 'owner',    type: 'address' },
     ],
     outputs: [{ name: 'shares', type: 'uint256' }],
   },
@@ -74,15 +86,53 @@ export const VAULT_ABI = [
     ],
     outputs: [{ name: 'assets', type: 'uint256' }],
   },
-  // ── Custom vault state ──
-  { name: 'sharePrice',           type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-  { name: 'deployedCapital',      type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-  { name: 'activePositionCount',  type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-  { name: 'getActiveTokenIds',    type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256[]' }] },
-  { name: 'strategyManager',      type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'address' }] },
-  { name: 'paused',               type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'bool'    }] },
-  { name: 'managementFeeBps',     type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
-  { name: 'performanceFeeBps',    type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  // ── Custom vault state (view) ──
+  { name: 'sharePrice',          type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'deployedCapital',     type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'activePositionCount', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'getActiveTokenIds',   type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256[]' }] },
+  { name: 'strategyManager',     type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'address' }] },
+  { name: 'feeRecipient',        type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'address' }] },
+  { name: 'highWaterMark',       type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'lastFeeTimestamp',    type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'managementFeeBps',    type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'performanceFeeBps',   type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
+  { name: 'paused',              type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'bool'    }] },
+  // ── Strategy (keeper-only write) ──
+  {
+    name: 'rebalance', type: 'function', stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'tickLower',      type: 'int24'   },
+      { name: 'tickUpper',      type: 'int24'   },
+      { name: 'amount0Desired', type: 'uint256' },
+      { name: 'amount1Desired', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+  {
+    name: 'collectFees', type: 'function', stateMutability: 'nonpayable',
+    inputs: [],
+    outputs: [],
+  },
+  // ── Admin (owner-only write) ──
+  {
+    name: 'setStrategyManager', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: '_manager', type: 'address' }],
+    outputs: [],
+  },
+  {
+    name: 'setFeeRecipient', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: '_recipient', type: 'address' }],
+    outputs: [],
+  },
+  {
+    name: 'setFees', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: '_mgmtBps', type: 'uint256' }, { name: '_perfBps', type: 'uint256' }],
+    outputs: [],
+  },
+  { name: 'pause',         type: 'function', stateMutability: 'nonpayable', inputs: [], outputs: [] },
+  { name: 'unpause',       type: 'function', stateMutability: 'nonpayable', inputs: [], outputs: [] },
+  { name: 'emergencyExit', type: 'function', stateMutability: 'nonpayable', inputs: [], outputs: [] },
   // ── Events ──
   {
     name: 'Deposit', type: 'event',
@@ -112,6 +162,25 @@ export const VAULT_ABI = [
       { name: 'liquidity',    type: 'uint128', indexed: false },
       { name: 'usdcDeployed', type: 'uint256', indexed: false },
     ],
+  },
+  {
+    name: 'FeesCollected', type: 'event',
+    inputs: [{ name: 'usdcAmount', type: 'uint256', indexed: false }],
+  },
+  {
+    name: 'StrategyManagerUpdated', type: 'event',
+    inputs: [
+      { name: 'oldManager', type: 'address', indexed: true },
+      { name: 'newManager', type: 'address', indexed: true },
+    ],
+  },
+  {
+    name: 'ManagementFeeCharged', type: 'event',
+    inputs: [{ name: 'feeShares', type: 'uint256', indexed: false }],
+  },
+  {
+    name: 'PerformanceFeeCharged', type: 'event',
+    inputs: [{ name: 'feeShares', type: 'uint256', indexed: false }],
   },
 ] as const;
 
