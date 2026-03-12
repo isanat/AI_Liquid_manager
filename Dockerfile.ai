@@ -5,15 +5,15 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
 
-# Copy requirements and install
+# Copy requirements and install Python dependencies
 COPY ai_engine/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -23,12 +23,13 @@ COPY ai_engine/ ./ai_engine/
 # Create models directory
 RUN mkdir -p /app/models/saved
 
-# Expose default port (Railway overrides with PORT env var)
+# Expose default port (Railway sets PORT automatically)
 EXPOSE 8000
 
-# Health check - uses PORT env var with fallback
+# Health check - Railway healthchecks use the PORT env var
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
-# Run the API - shell form enables variable expansion
-CMD python -m uvicorn ai_engine.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Start the application directly with Python
+# Python will read PORT from environment
+CMD ["python", "-m", "ai_engine.api.main"]
