@@ -1,6 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
+import { formatUnits, parseUnits } from 'viem';
+import {
+  VAULT_ADDRESS,
+  USDC_ARBITRUM,
+  readVaultState,
+  readUserVaultState,
+  approveUsdc,
+  depositToVault,
+  redeemFromVault,
+  type VaultState,
+  type UserVaultState,
+} from '@/lib/vault-contract';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity,
@@ -172,71 +185,130 @@ function MetricCard({
   );
 }
 
-// Vault Manager Component
+// Vault Manager Component — real ERC-4626 on-chain interactions
 function VaultManager() {
-  const { vault, deposit, withdraw } = useLiquidityStore();
   const { toast } = useToast();
+  const { address, isConnected, chainId } = useAccount();
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
+
   const [depositAmount, setDepositAmount] = useState('');
-  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawShares, setWithdrawShares] = useState('');
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [vaultState, setVaultState] = useState<VaultState | null>(null);
+  const [userState, setUserState] = useState<UserVaultState | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const vaultDeployed = Boolean(VAULT_ADDRESS);
+
+  const refreshState = useCallback(async () => {
+    if (!publicClient) return;
+    const vs = await readVaultState(publicClient);
+    setVaultState(vs);
+    if (address) {
+      const us = await readUserVaultState(publicClient, address);
+      setUserState(us);
+    }
+  }, [publicClient, address]);
+
+  useEffect(() => {
+    refreshState();
+    const iv = setInterval(refreshState, 30_000);
+    return () => clearInterval(iv);
+  }, [refreshState]);
 
   const handleDeposit = async () => {
+    if (!walletClient || !address || !publicClient) {
+      toast({ title: 'Connect wallet first', variant: 'destructive' });
+      return;
+    }
     const amount = parseFloat(depositAmount);
     if (!depositAmount || isNaN(amount) || amount <= 0) {
-      toast({ title: 'Invalid amount', description: 'Enter a positive USD amount.', variant: 'destructive' });
+      toast({ title: 'Invalid amount', description: 'Enter a positive USDC amount.', variant: 'destructive' });
+      return;
+    }
+    if (!vaultDeployed) {
+      toast({ title: 'Vault not deployed', description: 'Set NEXT_PUBLIC_VAULT_ADDRESS in env vars.', variant: 'destructive' });
       return;
     }
     setIsDepositing(true);
+    setTxHash(null);
     try {
-      deposit(amount, 'investor');
-      // Persist to DB
-      await fetch('/api/vault', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'deposit', amount }),
-      });
+      // Step 1: Approve USDC
+      toast({ title: 'Step 1/2 — Approve USDC', description: 'Confirm approval in your wallet…' });
+      const approveTx = await approveUsdc(walletClient, address, depositAmount);
+      await publicClient.waitForTransactionReceipt({ hash: approveTx });
+
+      // Step 2: Deposit
+      toast({ title: 'Step 2/2 — Deposit', description: 'Confirm deposit in your wallet…' });
+      const depositTx = await depositToVault(walletClient, address, depositAmount);
+      await publicClient.waitForTransactionReceipt({ hash: depositTx });
+
+      setTxHash(depositTx);
       setDepositAmount('');
+      await refreshState();
       toast({
         title: 'Deposit successful',
-        description: `$${amount.toLocaleString()} added — ${(amount / vault.nav).toFixed(0)} shares issued.`,
+        description: `$${amount.toLocaleString()} deposited into vault. vAI shares received.`,
       });
-    } catch {
-      toast({ title: 'Deposit failed', description: 'Could not save to database.', variant: 'destructive' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Transaction failed';
+      toast({ title: 'Deposit failed', description: msg.slice(0, 100), variant: 'destructive' });
     } finally {
       setIsDepositing(false);
     }
   };
 
   const handleWithdraw = async () => {
-    const shares = parseFloat(withdrawAmount);
-    if (!withdrawAmount || isNaN(shares) || shares <= 0) {
-      toast({ title: 'Invalid amount', description: 'Enter a positive number of shares.', variant: 'destructive' });
+    if (!walletClient || !address || !publicClient) {
+      toast({ title: 'Connect wallet first', variant: 'destructive' });
       return;
     }
-    if (shares > vault.totalShares) {
-      toast({ title: 'Insufficient shares', description: `You have ${vault.totalShares.toLocaleString()} shares.`, variant: 'destructive' });
+    const sharesNum = parseFloat(withdrawShares);
+    if (!withdrawShares || isNaN(sharesNum) || sharesNum <= 0) {
+      toast({ title: 'Invalid shares', description: 'Enter a positive number of vAI shares.', variant: 'destructive' });
+      return;
+    }
+    if (!vaultDeployed) {
+      toast({ title: 'Vault not deployed', variant: 'destructive' });
+      return;
+    }
+    const sharesToRedeem = parseUnits(withdrawShares, 18);
+    if (userState && sharesToRedeem > userState.shares) {
+      toast({
+        title: 'Insufficient shares',
+        description: `You hold ${formatUnits(userState.shares, 18)} vAI shares.`,
+        variant: 'destructive',
+      });
       return;
     }
     setIsWithdrawing(true);
+    setTxHash(null);
     try {
-      withdraw(shares, 'investor');
-      await fetch('/api/vault', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'withdraw', shares }),
-      });
-      setWithdrawAmount('');
+      toast({ title: 'Redeeming vAI shares', description: 'Confirm transaction in your wallet…' });
+      const redeemTx = await redeemFromVault(walletClient, address, sharesToRedeem);
+      await publicClient.waitForTransactionReceipt({ hash: redeemTx });
+
+      setTxHash(redeemTx);
+      setWithdrawShares('');
+      await refreshState();
       toast({
         title: 'Withdrawal successful',
-        description: `${shares.toLocaleString()} shares redeemed — $${(shares * vault.nav).toLocaleString(undefined, { maximumFractionDigits: 2 })} returned.`,
+        description: `Shares redeemed — USDC returned to your wallet.`,
       });
-    } catch {
-      toast({ title: 'Withdrawal failed', description: 'Could not save to database.', variant: 'destructive' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Transaction failed';
+      toast({ title: 'Withdrawal failed', description: msg.slice(0, 100), variant: 'destructive' });
     } finally {
       setIsWithdrawing(false);
     }
   };
+
+  const totalAssetsUsd = vaultState ? parseFloat(vaultState.totalAssetsUsd) : 0;
+  const sharePriceUsd  = vaultState ? parseFloat(vaultState.sharePriceUsd) : 1.0;
+  const userAssetsUsd  = userState ? parseFloat(userState.assetsValueUsd) : 0;
+  const userUsdcBal    = userState ? parseFloat(formatUnits(userState.usdcBalance, 6)) : 0;
 
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
@@ -248,85 +320,136 @@ function VaultManager() {
             </div>
             <div>
               <CardTitle className="text-lg">Vault Manager</CardTitle>
-              <CardDescription>Capital custody & accounting</CardDescription>
+              <CardDescription>
+                ERC-4626 · Arbitrum One
+                {VAULT_ADDRESS && (
+                  <a
+                    href={`https://arbiscan.io/address/${VAULT_ADDRESS}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="ml-2 font-mono text-xs text-emerald-400 hover:underline"
+                  >
+                    {VAULT_ADDRESS.slice(0, 6)}…{VAULT_ADDRESS.slice(-4)}
+                  </a>
+                )}
+              </CardDescription>
             </div>
           </div>
-          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-            Active
+          <Badge variant="outline" className={vaultState?.paused ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}>
+            {vaultState?.paused ? 'Paused' : vaultDeployed ? 'Live' : 'Not Deployed'}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* On-chain stats */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Total Assets</p>
+            <p className="text-xs text-muted-foreground">Total Assets (on-chain)</p>
             <p className="text-xl font-bold">
-              <AnimatedNumber value={vault.totalAssets} prefix="$" decimals={0} />
+              <AnimatedNumber value={totalAssetsUsd} prefix="$" decimals={0} />
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">NAV per Share</p>
+            <p className="text-xs text-muted-foreground">vAI Share Price</p>
             <p className="text-xl font-bold">
-              <AnimatedNumber value={vault.nav} prefix="$" />
+              <AnimatedNumber value={sharePriceUsd} prefix="$" decimals={4} />
             </p>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Total Shares</p>
-            <p className="text-xl font-bold">
-              <AnimatedNumber value={vault.totalShares} decimals={0} />
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Investors</p>
-            <p className="text-xl font-bold">{vault.investors}</p>
-          </div>
+          {isConnected && (
+            <>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Your Position</p>
+                <p className="text-xl font-bold">
+                  <AnimatedNumber value={userAssetsUsd} prefix="$" decimals={2} />
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Wallet USDC</p>
+                <p className="text-xl font-bold">
+                  <AnimatedNumber value={userUsdcBal} prefix="$" decimals={2} />
+                </p>
+              </div>
+            </>
+          )}
         </div>
+
+        {/* Active LP positions count */}
+        {vaultState && vaultState.activePositions > 0n && (
+          <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded p-2">
+            <Activity className="h-3 w-3 flex-shrink-0" />
+            {vaultState.activePositions.toString()} active LP position{vaultState.activePositions > 1n ? 's' : ''} on Uniswap V3
+          </div>
+        )}
 
         <Separator className="bg-border/50" />
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <input
-              type="number"
-              placeholder="Amount (USD)"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleDeposit()}
-              className="w-full px-3 py-2 text-sm bg-background/50 border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-            />
-            <Button
-              size="sm"
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
-              onClick={handleDeposit}
-              disabled={isDepositing}
-            >
-              {isDepositing ? <><Minus className="h-3 w-3 mr-1 animate-spin" />Processing…</> : 'Deposit'}
-            </Button>
-          </div>
-          <div className="space-y-2">
-            <input
-              type="number"
-              placeholder="Shares"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleWithdraw()}
-              className="w-full px-3 py-2 text-sm bg-background/50 border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/50"
-            />
-            <Button
-              size="sm"
-              variant="destructive"
-              className="w-full"
-              onClick={handleWithdraw}
-              disabled={isWithdrawing}
-            >
-              {isWithdrawing ? <><Minus className="h-3 w-3 mr-1 animate-spin" />Processing…</> : 'Withdraw'}
-            </Button>
-          </div>
-        </div>
+        {!isConnected ? (
+          <p className="text-xs text-muted-foreground text-center py-2">
+            Connect wallet (Arbitrum One) to deposit or withdraw
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Deposit USDC</p>
+                <input
+                  type="number"
+                  placeholder="Amount (USDC)"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleDeposit()}
+                  className="w-full px-3 py-2 text-sm bg-background/50 border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                />
+                <Button
+                  size="sm"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  onClick={handleDeposit}
+                  disabled={isDepositing || vaultState?.paused}
+                >
+                  {isDepositing ? <><Minus className="h-3 w-3 mr-1 animate-spin" />Processing…</> : 'Deposit'}
+                </Button>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Redeem vAI Shares</p>
+                <input
+                  type="number"
+                  placeholder="vAI shares"
+                  value={withdrawShares}
+                  onChange={(e) => setWithdrawShares(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleWithdraw()}
+                  className="w-full px-3 py-2 text-sm bg-background/50 border border-border/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                />
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="w-full"
+                  onClick={handleWithdraw}
+                  disabled={isWithdrawing || vaultState?.paused}
+                >
+                  {isWithdrawing ? <><Minus className="h-3 w-3 mr-1 animate-spin" />Processing…</> : 'Withdraw'}
+                </Button>
+              </div>
+            </div>
 
-        <div className="text-xs text-muted-foreground">
-          Last Rebalance: {vault.lastRebalance.toLocaleTimeString()}
-        </div>
+            {txHash && (
+              <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded p-2">
+                <span>Tx confirmed:</span>
+                <a
+                  href={`https://arbiscan.io/tx/${txHash}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="font-mono underline"
+                >
+                  {txHash.slice(0, 10)}…
+                </a>
+              </div>
+            )}
+          </>
+        )}
+
+        {vaultState && (
+          <div className="text-xs text-muted-foreground">
+            Mgmt fee: {Number(vaultState.managementFeeBps) / 100}% · Perf fee: {Number(vaultState.performanceFeeBps) / 100}%
+          </div>
+        )}
       </CardContent>
     </Card>
   );

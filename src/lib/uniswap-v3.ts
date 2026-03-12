@@ -249,12 +249,14 @@ export const ERC20_ABI = [
 
 // ─── Contract addresses ───────────────────────────────────────────────────────
 
-/** Uniswap V3 NonfungiblePositionManager — same address on mainnet + L2s */
+/** Uniswap V3 NonfungiblePositionManager — same address on mainnet + all L2s */
 export const NONFUNGIBLE_POSITION_MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88' as const;
-/** WETH on Ethereum mainnet */
-export const WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as const;
-/** USDC on Ethereum mainnet */
-export const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as const;
+/** WETH on Arbitrum One */
+export const WETH = '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1' as const;
+/** USDC native on Arbitrum One */
+export const USDC = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const;
+/** ETH/USDC 0.05% pool on Arbitrum One */
+export const ETH_USDC_POOL_ARBITRUM = '0xC6962004f452bE9203591991D15f6b388e09E8D0' as const;
 
 // ─── Tick helpers ─────────────────────────────────────────────────────────────
 
