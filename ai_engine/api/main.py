@@ -3,12 +3,14 @@ AI Liquidity Manager - FastAPI Service
 
 Endpoints:
   GET  /health                         — health check
+  GET  /predict                        — keeper endpoint: current strategy params + price
   POST /inference                      — run model on provided market data
   POST /inference/pool/{pool_address}  — run model fetching live data from The Graph
   POST /backtest                       — backtest against real or synthetic history
   POST /train                          — train model on real data from The Graph
   GET  /features/importance            — feature importance from trained model
   GET  /pools                          — list of supported pools
+  GET  /keeper/status                  — keeper bot last run status
 """
 import os
 import sys
@@ -574,6 +576,70 @@ async def train_model(config: TrainConfig):
     }
 
 
+@app.get("/predict")
+async def predict_for_keeper():
+    """
+    Keeper endpoint — returns current strategy parameters + ETH price.
+    Called by keeper.py every 15 minutes to decide tick range and allocation.
+    Response keys: current_price, range_width, core_pct, confidence, regime.
+    """
+    try:
+        # Try to get live price from CoinGecko
+        current_price = 2500.0
+        try:
+            async with __import__("httpx").AsyncClient(timeout=5.0) as client:
+                resp = await client.get(
+                    "https://api.coingecko.com/api/v3/simple/price",
+                    params={"ids": "ethereum", "vs_currencies": "usd"},
+                )
+                resp.raise_for_status()
+                current_price = float(resp.json()["ethereum"]["usd"])
+        except Exception:
+            pass  # Use default
+
+        if _strategy_model and _strategy_model.is_trained:
+            from features.feature_engineering import FeatureEngineer
+            fe = FeatureEngineer()
+            fe.update(price=current_price, volume_24h=300_000_000, liquidity=500_000_000, fees_24h=90_000)
+            features = fe.compute_features(
+                current_price=current_price,
+                current_tick=int(__import__("math").log(current_price * 1e12) / __import__("math").log(1.0001)),
+                total_liquidity=500_000_000,
+                active_liquidity=250_000_000,
+                volume_1h=12_500_000,
+                volume_24h=300_000_000,
+            )
+            out = _strategy_model.predict(features)
+            return {
+                "current_price": current_price,
+                "range_width":   out.range_width / 100.0,  # convert % → fraction
+                "core_pct":      out.core_allocation / 100.0,
+                "confidence":    out.confidence,
+                "regime":        out.detected_regime.value if hasattr(out.detected_regime, "value") else str(out.detected_regime),
+                "model_version": _model_version,
+            }
+
+        # Rule-based fallback
+        return {
+            "current_price": current_price,
+            "range_width":   0.06,
+            "core_pct":      0.70,
+            "confidence":    0.72,
+            "regime":        "range",
+            "model_version": _model_version,
+        }
+    except Exception as e:
+        logger.error(f"/predict error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/keeper/status")
+async def keeper_status():
+    """Returns last execution status of the on-chain keeper bot."""
+    from keeper.keeper import keeper_state
+    return keeper_state
+
+
 @app.get("/features/importance")
 async def feature_importance():
     """Feature importance from trained model, or rule-based ranking."""
@@ -606,7 +672,7 @@ async def feature_importance():
     }
 
 
-# ── Startup: try loading saved model ─────────────────────────────────────────
+# ── Startup: load model + start keeper scheduler ──────────────────────────────
 
 @app.on_event("startup")
 async def _startup():
@@ -622,14 +688,18 @@ async def _startup():
             _strategy_model = model
             _model_version = "lgbm-v1-loaded"
             logger.info(f"Loaded saved model path={save_path}")
-            return
         except Exception as e:
             logger.info(f"No saved model or load failed: {e}")
+            import asyncio
+            asyncio.create_task(_auto_train())
+    else:
+        # 2. No saved model — auto-train in background using CoinGecko data
+        logger.info("No saved model found — auto-training with CoinGecko data (background)")
+        import asyncio
+        asyncio.create_task(_auto_train())
 
-    # 2. No saved model — auto-train in background using CoinGecko data
-    logger.info("No saved model found — auto-training with CoinGecko data (background)")
-    import asyncio
-    asyncio.create_task(_auto_train())
+    # 3. Start keeper scheduler (only if env vars are configured)
+    _start_keeper_scheduler()
 
 
 async def _auto_train():
@@ -709,6 +779,44 @@ async def _auto_train():
 
     except Exception as e:
         logger.error(f"Auto-train failed: {e}")
+
+
+def _start_keeper_scheduler():
+    """Start APScheduler if VAULT_ADDRESS and KEEPER_PRIVATE_KEY are set."""
+    vault_addr   = os.getenv("VAULT_ADDRESS")
+    keeper_key   = os.getenv("KEEPER_PRIVATE_KEY")
+    rpc_url      = os.getenv("RPC_URL_ARBITRUM")
+
+    if not (vault_addr and keeper_key and rpc_url):
+        logger.info(
+            "Keeper scheduler disabled — set VAULT_ADDRESS, KEEPER_PRIVATE_KEY, "
+            "and RPC_URL_ARBITRUM to enable automated rebalancing"
+        )
+        return
+
+    try:
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+        from keeper.keeper import keeper_job
+
+        interval_minutes = int(os.getenv("REBALANCE_INTERVAL", "15"))
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(
+            keeper_job,
+            trigger="interval",
+            minutes=interval_minutes,
+            id="keeper",
+            name="AI Vault Keeper",
+            max_instances=1,
+            coalesce=True,
+        )
+        scheduler.start()
+        logger.info(
+            f"Keeper scheduler started — rebalancing every {interval_minutes} minutes"
+        )
+    except ImportError:
+        logger.warning("apscheduler not installed — keeper scheduler disabled. Run: pip install apscheduler")
+    except Exception as e:
+        logger.error(f"Failed to start keeper scheduler: {e}")
 
 
 if __name__ == "__main__":
