@@ -59,5 +59,11 @@ server.log
 # Prisma
 prisma/migrations/
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+ai_engine/models/saved/
+
 # Development
 download/
