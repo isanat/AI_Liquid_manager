@@ -30,6 +30,7 @@ import {
   LineChart,
   Minus,
   Play,
+  RefreshCw,
   Shield,
   Target,
   TrendingDown,

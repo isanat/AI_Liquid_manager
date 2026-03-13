@@ -4,7 +4,7 @@ import {
   Globe, ChevronRight, Shield, DollarSign, TrendingUp,
   Users, Zap, CheckCircle, Package, Settings,
   ArrowRight, Star, Building2, Rocket, Lock,
-  BarChart3, Coins, RefreshCw, FileText,
+  BarChart3, Coins, RefreshCw, FileText, Server,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
