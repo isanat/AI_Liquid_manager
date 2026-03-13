@@ -15,6 +15,7 @@ import pandas as pd
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
+import httpx
 import structlog
 
 from models.types import MarketFeatures
@@ -396,7 +397,19 @@ class DataFetcher:
             fees_24h = float(latest.get('feesUSD', 0) or 0) * 24
             total_liquidity = float(latest.get('tvlUSD', tvl) or tvl)
         else:
-            current_price = price or 1850.0
+            # Both pool state and hourly history unavailable — try CoinGecko as last resort
+            current_price = price or 0.0
+            if not current_price:
+                try:
+                    async with httpx.AsyncClient(timeout=5.0) as client:
+                        resp = await client.get(
+                            "https://api.coingecko.com/api/v3/simple/price",
+                            params={"ids": "ethereum", "vs_currencies": "usd"},
+                        )
+                        resp.raise_for_status()
+                        current_price = float(resp.json()["ethereum"]["usd"])
+                except Exception:
+                    logger.warning("DataFetcher.get_features: all price sources unavailable")
             volume_24h = 12_000_000.0
             fees_24h = 36_000.0
             total_liquidity = tvl or 25_000_000.0

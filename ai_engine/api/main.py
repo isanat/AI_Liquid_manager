@@ -584,8 +584,8 @@ async def predict_for_keeper():
     Response keys: current_price, range_width, core_pct, confidence, regime.
     """
     try:
-        # Try to get live price from CoinGecko
-        current_price = 2500.0
+        # 1. Try CoinGecko for the most up-to-date ETH price
+        current_price = 0.0
         try:
             async with __import__("httpx").AsyncClient(timeout=5.0) as client:
                 resp = await client.get(
@@ -595,23 +595,19 @@ async def predict_for_keeper():
                 resp.raise_for_status()
                 current_price = float(resp.json()["ethereum"]["usd"])
         except Exception:
-            pass  # Use default
+            logger.warning("/predict: CoinGecko unavailable — will use pool price from The Graph")
 
         if _strategy_model and _strategy_model.is_trained:
-            from features.feature_engineering import FeatureEngineer
-            fe = FeatureEngineer()
-            fe.update(price=current_price, volume_24h=300_000_000, liquidity=500_000_000, fees_24h=90_000)
-            features = fe.compute_features(
-                current_price=current_price,
-                current_tick=int(__import__("math").log(current_price * 1e12) / __import__("math").log(1.0001)),
-                total_liquidity=500_000_000,
-                active_liquidity=250_000_000,
-                volume_1h=12_500_000,
-                volume_24h=300_000_000,
-            )
+            # Fetch real pool data from The Graph (volume, TVL, tick, liquidity)
+            from features.feature_engineering import DataFetcher
+            from data.graph_client import DEFAULT_POOL
+            fetcher = DataFetcher()
+            features = await fetcher.get_features(DEFAULT_POOL)
+            # CoinGecko price is more timely; fall back to pool price from The Graph
+            price_for_response = current_price if current_price > 0 else features.price
             out = _strategy_model.predict(features)
             return {
-                "current_price": current_price,
+                "current_price": price_for_response,
                 "range_width":   out.range_width / 100.0,  # convert % → fraction
                 "core_pct":      out.core_allocation / 100.0,
                 "confidence":    out.confidence,
@@ -619,7 +615,15 @@ async def predict_for_keeper():
                 "model_version": _model_version,
             }
 
-        # Rule-based fallback
+        # Rule-based fallback — get price from pool state if CoinGecko failed
+        if current_price <= 0:
+            try:
+                from data.graph_client import fetch_pool_state, DEFAULT_POOL
+                state = await fetch_pool_state(DEFAULT_POOL)
+                if state:
+                    current_price = float(state.get("token0Price", 0) or 0)
+            except Exception:
+                pass
         return {
             "current_price": current_price,
             "range_width":   0.06,
