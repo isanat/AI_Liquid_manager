@@ -468,14 +468,12 @@ function StrategyController() {
   const [cyclePhase, setCyclePhase] = useState(0);
   const [keeperStatus, setKeeperStatus] = useState<{ last_run?: string; next_run_in_seconds?: number } | null>(null);
 
-  // Fetch real keeper status from backend
+  // Fetch real keeper status via server-side proxy (avoids CORS)
   useEffect(() => {
-    const AI_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL ?? '';
-    if (!AI_URL) return;
     const fetch_ = () =>
-      fetch(`${AI_URL}/keeper/status`)
+      fetch('/api/system-status', { cache: 'no-store' })
         .then(r => r.ok ? r.json() : null)
-        .then(d => d && setKeeperStatus(d))
+        .then(d => d?.keeper && setKeeperStatus(d.keeper))
         .catch(() => null);
     fetch_();
     const iv = setInterval(fetch_, 30_000);
@@ -600,7 +598,7 @@ function StrategyController() {
           <div className="text-xs">
             <p className="text-muted-foreground">Cycle Interval</p>
             <p className="font-medium">
-              {keeperStatus ? `${Math.round((keeperStatus as { interval_seconds?: number }).interval_seconds ?? 900 / 60)} min` : '15 min'}
+              {keeperStatus ? `${Math.round(((keeperStatus as { interval_seconds?: number }).interval_seconds ?? 900) / 60)} min` : '15 min'}
             </p>
           </div>
           <div className="text-xs">
