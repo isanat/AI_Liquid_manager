@@ -510,14 +510,13 @@ function StrategyController() {
         if (json.success && json.data) {
           const d = json.data;
           setAiOutputs({
-            rangeWidth:  d.range_width  ?? d.rangeWidth,
-            rangeBias:   d.range_bias   ?? d.rangeBias,
+            rangeWidth:  d.range_width ?? d.rangeWidth,
             confidence:  d.confidence,
-            regime:      d.detected_regime ?? d.regime,
             capitalAllocation: {
               core:          d.core_allocation          ?? d.capitalAllocation?.core          ?? 70,
               defensive:     d.defensive_allocation     ?? d.capitalAllocation?.defensive     ?? 20,
               opportunistic: d.opportunistic_allocation ?? d.capitalAllocation?.opportunistic ?? 10,
+              cashBuffer:    d.cash_buffer              ?? d.capitalAllocation?.cashBuffer    ?? 0,
             },
           });
           toast({ title: 'AI inference complete', description: `Regime: ${d.detected_regime ?? 'range'} | Confidence: ${Math.round((d.confidence ?? 0.7) * 100)}%` });
