@@ -463,10 +463,11 @@ function VaultManager() {
 
 // Strategy Controller Component
 function StrategyController() {
-  const { currentCycle, startCycle, executeRebalance, updateMarketData, systemStatus } = useLiquidityStore();
+  const { currentCycle, startCycle, executeRebalance, updateMarketData, setAiOutputs, systemStatus } = useLiquidityStore();
   const { toast } = useToast();
   const [cyclePhase, setCyclePhase] = useState(0);
-  const [keeperStatus, setKeeperStatus] = useState<{ last_run?: string; next_run_in_seconds?: number } | null>(null);
+  const [keeperStatus, setKeeperStatus] = useState<{ last_run?: string; next_run_in_seconds?: number; status?: string } | null>(null);
+  const [isTriggering, setIsTriggering] = useState(false);
 
   // Fetch real keeper status via server-side proxy (avoids CORS)
   useEffect(() => {
@@ -493,15 +494,60 @@ function StrategyController() {
     { name: 'Execution', icon: Zap, key: 'execution' },
   ];
 
-  const handleRunCycle = () => {
+  const handleRunCycle = async () => {
     startCycle();
-    updateMarketData(); // real fetch
-    toast({ title: 'Strategy cycle started', description: 'Fetching market data and running AI inference…' });
+    updateMarketData(); // fetch market data from The Graph
+    toast({ title: 'Strategy cycle started', description: 'Fetching live market data and running AI inference…' });
+
+    // Call Python AI engine via proxy for live inference on the ETH/USDC pool
+    const POOL = '0xC6962004f452bE9203591991D15f6b388e09E8D0';
+    try {
+      const res = await fetch(`/api/ai?action=pool&pool=${POOL}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const d = json.data;
+          setAiOutputs({
+            rangeWidth:  d.range_width  ?? d.rangeWidth,
+            rangeBias:   d.range_bias   ?? d.rangeBias,
+            confidence:  d.confidence,
+            regime:      d.detected_regime ?? d.regime,
+            capitalAllocation: {
+              core:          d.core_allocation          ?? d.capitalAllocation?.core          ?? 70,
+              defensive:     d.defensive_allocation     ?? d.capitalAllocation?.defensive     ?? 20,
+              opportunistic: d.opportunistic_allocation ?? d.capitalAllocation?.opportunistic ?? 10,
+            },
+          });
+          toast({ title: 'AI inference complete', description: `Regime: ${d.detected_regime ?? 'range'} | Confidence: ${Math.round((d.confidence ?? 0.7) * 100)}%` });
+        }
+      }
+    } catch {
+      // Non-fatal: store already has last known AI outputs
+    }
   };
 
-  const handleRebalance = () => {
-    executeRebalance();
-    toast({ title: 'Rebalance queued', description: 'Position rebalance submitted with current AI parameters.' });
+  const handleRebalance = async () => {
+    if (isTriggering) return;
+    setIsTriggering(true);
+    toast({ title: 'Rebalance queued', description: 'Sending keeper trigger to execute on-chain rebalance…' });
+    try {
+      const res = await fetch('/api/keeper/trigger', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.queued) {
+        executeRebalance();
+        toast({ title: 'Keeper triggered', description: 'On-chain rebalance cycle started. Check Keeper status for progress.' });
+      } else {
+        toast({
+          title: res.ok ? 'Keeper busy' : 'Trigger failed',
+          description: data.message ?? data.error ?? data.detail ?? 'Check Render env vars: VAULT_ADDRESS, KEEPER_PRIVATE_KEY, RPC_URL_ARBITRUM',
+          variant: 'destructive',
+        });
+      }
+    } catch {
+      toast({ title: 'Network error', description: 'Could not reach keeper API.', variant: 'destructive' });
+    } finally {
+      setIsTriggering(false);
+    }
   };
 
   useEffect(() => {
@@ -622,8 +668,9 @@ function StrategyController() {
             variant="outline"
             className="flex-1"
             onClick={handleRebalance}
+            disabled={isTriggering}
           >
-            Rebalance
+            {isTriggering ? 'Triggering…' : 'Rebalance'}
           </Button>
         </div>
       </CardContent>

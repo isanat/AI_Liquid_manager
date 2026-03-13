@@ -192,6 +192,7 @@ interface LiquidityStore {
   updateMarketData: () => void;
   startCycle: () => void;
   executeRebalance: () => void;
+  setAiOutputs: (outputs: Partial<AIOutputs>) => void;
   deposit: (amount: number, investor: string) => void;
   withdraw: (shares: number, investor: string) => void;
   collectFees: (positionId: string) => void;
@@ -349,6 +350,10 @@ export const useLiquidityStore = create<LiquidityStore>((set, get) => ({
       aiInputs: get().aiInputs,
     };
     set({ currentCycle: cycle });
+  },
+
+  setAiOutputs: (outputs: Partial<AIOutputs>) => {
+    set(state => ({ aiOutputs: { ...state.aiOutputs, ...outputs } }));
   },
 
   executeRebalance: () => {
