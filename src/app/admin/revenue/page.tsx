@@ -33,7 +33,7 @@ export default function RevenuePage() {
   const clientNetPct   = (clientNet / aum) * 100;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-6">
 
       {/* Header */}
       <div>
@@ -43,7 +43,7 @@ export default function RevenuePage() {
           <ChevronRight className="h-3 w-3" />
           <span className="text-zinc-300">Calculadora de Receita</span>
         </div>
-        <h1 className="text-3xl font-bold text-zinc-100 flex items-center gap-3">
+        <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100 flex items-center gap-3">
           <Calculator className="h-7 w-7 text-emerald-400" />
           Calculadora de Receita White-Label
         </h1>
@@ -52,7 +52,7 @@ export default function RevenuePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-1 sm:grid-cols-2 gap-6">
 
         {/* Controls */}
         <div className="space-y-5">
@@ -237,7 +237,7 @@ export default function RevenuePage() {
               <CardDescription className="text-xs">Comparação para um cliente com {fmt(aum / numClients)} investido</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-center">
                   <p className="text-[10px] text-zinc-500">APY Bruto do Pool</p>
                   <p className="text-xl font-bold text-zinc-300">{apyPct}%</p>

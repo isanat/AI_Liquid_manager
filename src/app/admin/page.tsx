@@ -83,7 +83,7 @@ const architecture = [
 
 export default function AdminPage() {
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8">
 
       {/* Header */}
       <div className="space-y-1">
@@ -93,7 +93,7 @@ export default function AdminPage() {
           <ChevronRight className="h-3 w-3" />
           <span className="text-zinc-300">Dashboard</span>
         </div>
-        <h1 className="text-3xl font-bold text-zinc-100">
+        <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">
           AI Liquid Manager
         </h1>
         <p className="text-zinc-400 max-w-2xl">

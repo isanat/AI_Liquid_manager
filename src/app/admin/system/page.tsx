@@ -117,10 +117,10 @@ export default function SystemPage() {
     : '—';
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6">
 
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-zinc-500 mb-3">
             <Shield className="h-3 w-3" />
@@ -128,12 +128,12 @@ export default function SystemPage() {
             <ChevronRight className="h-3 w-3" />
             <span className="text-zinc-300">Sistema ao Vivo</span>
           </div>
-          <h1 className="text-3xl font-bold text-zinc-100">Monitorização do Sistema</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">Monitorização do Sistema</h1>
           <p className="text-zinc-400 mt-1 text-sm">
             Status em tempo real dos serviços, keeper bot e variáveis de ambiente.
           </p>
         </div>
-        <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-400" onClick={refresh} disabled={loading}>
+        <Button size="sm" variant="outline" className="border-zinc-700 text-zinc-400 self-start" onClick={refresh} disabled={loading}>
           <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
           Actualizar
         </Button>
@@ -144,7 +144,7 @@ export default function SystemPage() {
       </p>
 
       {/* Service Status Overview */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           {
             icon: Server, color: 'text-violet-400', label: 'Frontend (Next.js)',
@@ -188,7 +188,7 @@ export default function SystemPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 { label: 'Status',            value: health?.status        ?? '—' },
                 { label: 'Modelo carregado',  value: health?.model_loaded  ? 'Sim' : 'Não' },
@@ -259,7 +259,7 @@ export default function SystemPage() {
         </CardHeader>
         <CardContent>
           {keeper ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 { label: 'Última execução', value: keeper.last_run ? new Date(keeper.last_run).toLocaleString('pt-PT') : '—' },
                 { label: 'Próxima execução em', value: nextRun },
@@ -336,16 +336,16 @@ export default function SystemPage() {
         <CardContent>
           <div className="space-y-2">
             {[
-              { label: 'Vault Contract (Sepolia)', value: '0xF9FD652453801749768e5660bbE624Ee90bE39a3' },
+              { label: 'Vault Contract (Sepolia)', value: process.env.NEXT_PUBLIC_VAULT_ADDRESS ?? '0x69d8ec9d32c26e652cd5643100a2ec0149d76c3d' },
               { label: 'USDC Arbitrum One',        value: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' },
               { label: 'USDC Arbitrum Sepolia',    value: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d' },
               { label: 'WETH Arbitrum',            value: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1' },
-              { label: 'Uniswap V3 NPM',           value: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88' },
-              { label: 'ETH/USDC Pool (Arbitrum)', value: '0xC6962004f452bE9203591991D15f6b388e09E8D0' },
+              { label: 'NPM Arbitrum Sepolia',     value: '0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65' },
+              { label: 'ETH/USDC Pool (Sepolia)',  value: '0x77F8dA77c8fb5ADAf3088937B934beC2B0ff97bF' },
               { label: 'Arbiscan Sepolia',         value: 'https://sepolia.arbiscan.io' },
               { label: 'Arbiscan Mainnet',         value: 'https://arbiscan.io' },
             ].map(r => (
-              <div key={r.label} className="flex justify-between py-1.5 border-b border-zinc-800/50 last:border-0">
+              <div key={r.label} className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-zinc-800/50 last:border-0 gap-0.5">
                 <span className="text-xs text-zinc-400 shrink-0">{r.label}</span>
                 <span className="text-[10px] font-mono text-zinc-500 text-right ml-4 truncate">{r.value}</span>
               </div>
