@@ -10,6 +10,7 @@ import {
   useReadContract,
 } from 'wagmi';
 import { arbitrum, arbitrumSepolia } from 'wagmi/chains';
+import { formatUnits } from 'viem';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -157,7 +158,7 @@ export function WalletConnect() {
     args:         address ? [address] : undefined,
     query:        { enabled: !!address },
   });
-  const usdcBalance = usdcRaw ? Number(usdcRaw) / 1e6 : 0;
+  const usdcBalance = usdcRaw ? parseFloat(formatUnits(usdcRaw as bigint, 6)) : 0;
 
   const isCorrectChain = chainId === ACTIVE_CHAIN_ID;
   const meta = chainMeta(chainId);

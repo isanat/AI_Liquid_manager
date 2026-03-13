@@ -51,10 +51,8 @@ export async function POST(request: NextRequest) {
       // Derive NAV from DB record (totalValueLocked / totalShares) or use 1:1 as fallback.
       // The authoritative NAV for on-chain withdrawals comes from the ERC-4626 vault directly;
       // this record is only for local history tracking.
-      const existing = await db.vault.findUnique({ where: { id: 'vault-001' } });
-      const nav = existing && existing.totalValueLocked > 0
-        ? existing.totalValueLocked / Math.max(existing.totalValueLocked, 1)
-        : 1.0;
+      // NAV is authoritative from on-chain ERC-4626; DB is history only → use 1.0
+      const nav = 1.0;
       const usdValue = withdrawShares * nav;
 
       const vault = await db.vault.upsert({
