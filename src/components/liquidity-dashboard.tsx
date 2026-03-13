@@ -1070,11 +1070,8 @@ function PriceChart() {
     let cancelled = false;
     async function fetchHistory() {
       try {
-        // CoinGecko free API — hourly data for last 24h
-        const res = await fetch(
-          'https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=1&interval=hourly',
-          { headers: { Accept: 'application/json' } }
-        );
+        // Proxied via /api/price-history to avoid browser 401/CORS on CoinGecko
+        const res = await fetch('/api/price-history', { cache: 'no-store' });
         if (!res.ok) throw new Error('CoinGecko error');
         const json = await res.json();
         if (cancelled) return;
