@@ -96,14 +96,35 @@ const ERC20_BALANCE_ABI = [
 
 // ─── Connector picker dialog ──────────────────────────────────────────────────
 
+/** True when running in a mobile browser (not SSR) */
+function isMobileBrowser() {
+  if (typeof window === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+
+/** True when MetaMask (or any injected provider) is available */
+function isMetaMaskInjected() {
+  if (typeof window === 'undefined') return false;
+  return !!(window as { ethereum?: unknown }).ethereum;
+}
+
 function ConnectorDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { connect, connectors, isPending } = useConnect();
+  const mobile = isMobileBrowser();
+  const metamaskInjected = isMetaMaskInjected();
 
   const labelFor = (id: string) => {
     if (id.includes('metaMask') || id === 'injected') return 'MetaMask';
     if (id.includes('coinbase'))      return 'Coinbase Wallet';
     if (id.includes('walletConnect')) return 'WalletConnect';
     return id;
+  };
+
+  /** On mobile, open the MetaMask deep link so it redirects back to the dapp */
+  const openMetaMaskDeepLink = () => {
+    const dappUrl = window.location.href.replace(/^https?:\/\//, '');
+    window.location.href = `https://metamask.app.link/dapp/${dappUrl}`;
+    onClose();
   };
 
   return (
@@ -113,19 +134,45 @@ function ConnectorDialog({ open, onClose }: { open: boolean; onClose: () => void
           <DialogTitle className="text-zinc-100">Connect Wallet</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-2 mt-2">
-          {connectors.map(connector => (
-            <Button
-              key={connector.id}
-              variant="outline"
-              className="justify-start border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800"
-              disabled={isPending}
-              onClick={() => { connect({ connector }); onClose(); }}
-            >
-              <Wallet className="h-4 w-4 mr-2 text-emerald-400" />
-              {labelFor(connector.id)}
-            </Button>
-          ))}
+          {connectors.map(connector => {
+            const isMetaMaskConnector =
+              connector.id.includes('metaMask') || connector.id === 'injected';
+
+            // On mobile without injected provider → deep link instead of wagmi connect
+            if (isMetaMaskConnector && mobile && !metamaskInjected) {
+              return (
+                <Button
+                  key={connector.id}
+                  variant="outline"
+                  className="justify-start border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800"
+                  onClick={openMetaMaskDeepLink}
+                >
+                  <Wallet className="h-4 w-4 mr-2 text-emerald-400" />
+                  MetaMask
+                  <span className="ml-auto text-[10px] text-zinc-500">app</span>
+                </Button>
+              );
+            }
+
+            return (
+              <Button
+                key={connector.id}
+                variant="outline"
+                className="justify-start border-zinc-700 hover:border-zinc-500 hover:bg-zinc-800"
+                disabled={isPending}
+                onClick={() => { connect({ connector }); onClose(); }}
+              >
+                <Wallet className="h-4 w-4 mr-2 text-emerald-400" />
+                {labelFor(connector.id)}
+              </Button>
+            );
+          })}
         </div>
+        {mobile && !metamaskInjected && (
+          <p className="text-xs text-amber-400/80 mt-1 text-center">
+            No se detectó MetaMask. Usa WalletConnect o abre desde la app MetaMask.
+          </p>
+        )}
         <p className="text-xs text-zinc-500 mt-1 text-center">
           Make sure your wallet is on{' '}
           <span className="text-amber-400 font-medium">
