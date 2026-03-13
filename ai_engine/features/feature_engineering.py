@@ -294,8 +294,9 @@ class FeatureEngineer:
         
         if not gk_values:
             return 0.04
-        
-        return float(np.sqrt(np.mean(gk_values) * 24 * 365))
+
+        mean_gk = max(0.0, np.mean(gk_values))  # guard against negative mean (co > hl case)
+        return float(np.sqrt(mean_gk * 24 * 365))
     
     def _compute_trend(self, values: List[float]) -> float:
         """Compute trend direction (-1 to 1)"""
@@ -305,9 +306,11 @@ class FeatureEngineer:
         values_arr = np.array(values)
         x = np.arange(len(values_arr))
         
-        # Linear regression slope
+        # Linear regression slope — polyfit is unstable on constant arrays
+        if np.std(values_arr) == 0:
+            return 0.0
         slope = np.polyfit(x, values_arr, 1)[0]
-        
+
         # Normalize by average value
         avg = np.mean(values_arr)
         return float(slope / avg) if avg > 0 else 0.0

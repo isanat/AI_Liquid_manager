@@ -23,60 +23,71 @@ logger = structlog.get_logger()
 
 
 def train_model(output_path: str = "models/saved"):
-    """Train model with synthetic data"""
+    """
+    Train model using the proper feature engineering pipeline on synthetic price history.
+    Uses the same pipeline as the API's auto-train, so the feature vectors are
+    structurally identical to what the model will receive at inference time.
+    """
     import numpy as np
-    
-    logger.info("Training model with synthetic data...")
-    
-    n_samples = 10000
-    
-    # Generate synthetic training data
-    X = np.random.randn(n_samples, 29) * 0.1
-    
-    # Target 1: Range width
-    y_range = 4 + X[:, 5] * 20 + np.random.randn(n_samples) * 2
-    y_range = np.clip(y_range, 2, 20)
-    
-    # Target 2: Allocation
-    y_allocation = np.zeros((n_samples, 3))
-    for i in range(n_samples):
-        vol = X[i, 5]
-        if vol > 0.05:
-            y_allocation[i] = [60, 30, 5]
-        elif vol < -0.05:
-            y_allocation[i] = [75, 15, 10]
-        else:
-            y_allocation[i] = [70, 20, 10]
-        y_allocation[i] += np.random.randn(3) * 2
-    
-    # Target 3: Regime
-    y_regime = np.zeros(n_samples)
-    for i in range(n_samples):
-        velocity = X[i, 3]
-        volatility = X[i, 5]
-        
-        if abs(velocity) > 0.5:
-            y_regime[i] = 0
-        elif volatility > 0.5:
-            y_regime[i] = 2
-        elif volatility < -0.5:
-            y_regime[i] = 3
-        else:
-            y_regime[i] = 1
-    
-    # Train
+    from models.types import MarketRegime
+
+    logger.info("Training model using feature engineering pipeline on synthetic data...")
+
+    history = generate_synthetic_history(days=365, volatility=0.04)
+
+    fe = FeatureEngineer()
+    X_rows, y_range_rows, y_alloc_rows, y_regime_rows = [], [], [], []
+    regime_map = {
+        MarketRegime.TREND: 0, MarketRegime.RANGE: 1,
+        MarketRegime.HIGH_VOL: 2, MarketRegime.LOW_VOL: 3,
+    }
+
+    for _, row in history.iterrows():
+        price = float(row["price"])
+        if price <= 0:
+            continue
+        vol24 = float(row.get("volume_24h", 0))
+        liq   = float(row.get("liquidity", 0))
+        fees  = float(row.get("fees_24h", 0))
+        ts    = row["timestamp"]
+        fe.update(price=price, volume_24h=vol24, liquidity=liq, fees_24h=fees, timestamp=ts)
+        if len(fe.price_history) < 5:
+            continue
+        features = fe.compute_features(
+            current_price=price,
+            current_tick=int(np.log(price) / np.log(1.0001)),
+            total_liquidity=liq,
+            active_liquidity=liq * 0.5,
+            volume_1h=vol24 / 24,
+            volume_24h=vol24,
+            timestamp=ts,
+        )
+        X_rows.append(features.to_array())
+        rb = RuleBasedFallback.predict(features)
+        y_range_rows.append(rb.range_width)
+        y_alloc_rows.append([rb.core_allocation, rb.defensive_allocation, rb.opportunistic_allocation])
+        y_regime_rows.append(int(regime_map.get(rb.detected_regime, 1)))
+
+    if len(X_rows) < 20:
+        raise RuntimeError(f"Not enough training samples ({len(X_rows)}) — synthetic history too short")
+
+    X        = np.array(X_rows)
+    y_range  = np.array(y_range_rows, dtype=np.float64)
+    y_alloc  = np.array(y_alloc_rows, dtype=np.float64)
+    y_regime = np.clip(np.array(y_regime_rows, dtype=np.int32), 0, 3)
+
     model = LiquidityStrategyModel()
-    metrics = model.train(X, y_range, y_allocation, y_regime)
-    
-    # Save
+    metrics = model.train(X, y_range, y_alloc, y_regime)
+
     output = Path(output_path)
     model.save(output)
-    
-    logger.info("Model trained and saved", 
-                output=str(output), 
+
+    logger.info("Model trained and saved",
+                output=str(output),
+                samples=len(X_rows),
                 metrics=metrics,
                 version=model.model_version)
-    
+
     return model, metrics
 
 
