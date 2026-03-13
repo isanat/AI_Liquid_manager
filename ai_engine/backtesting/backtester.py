@@ -306,7 +306,7 @@ class LiquidityBacktester:
         # Calculate new ranges
         tick = self._price_to_tick(price)
         range_width = output.range_width / 100  # Convert to decimal
-        tick_spacing = 60  # For 0.3% fee tier
+        tick_spacing = 10  # For 0.05% fee tier (matches vault contract)
         
         # Core position
         core_pct = output.core_allocation / 100

@@ -36,9 +36,7 @@ logger = logging.getLogger(__name__)
 
 # ─── Contract addresses (Arbitrum One) ───────────────────────────────────────
 
-NPM_ADDRESS    = "0xC36442b4a4522E871399CD717aBDD847Ab11FE88"
 USDC_ADDRESS   = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
-WETH_ADDRESS   = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
 
 TICK_SPACING   = 10   # 0.05% pool
 TICK_LIMIT     = 887272
