@@ -236,7 +236,7 @@ export function WalletConnect() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-[min(288px,90vw)] bg-zinc-900 border-zinc-800">
+      <DropdownMenuContent align="end" className="w-[calc(100vw-32px)] sm:w-72 bg-zinc-900 border-zinc-800">
 
         {/* Address + balances */}
         <div className="px-3 py-2 space-y-1.5">

@@ -77,18 +77,16 @@ export function NetworkGuard() {
     const isTestnet  = targetInfo?.testnet ?? false;
 
     return (
-      <div className="border-b border-amber-500/30 bg-amber-500/5 px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+      <div className="border-b border-amber-500/30 bg-amber-500/5 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-amber-300">
-                Wrong network detected
-              </p>
+              <p className="text-sm font-medium text-amber-300">Wrong network detected</p>
               <p className="text-xs text-zinc-400">
-                This app runs on{' '}
+                App runs on{' '}
                 <span className="font-semibold text-amber-400">{targetName}</span>.
-                Switch your wallet to continue.
+                Switch to continue.
               </p>
             </div>
           </div>
@@ -108,7 +106,8 @@ export function NetworkGuard() {
               {isTestnet
                 ? <FlaskConical className="h-4 w-4 mr-1.5" />
                 : <Globe       className="h-4 w-4 mr-1.5" />}
-              Switch to {targetName}
+              <span className="sm:hidden">Switch Network</span>
+              <span className="hidden sm:inline">Switch to {targetName}</span>
             </Button>
           </div>
         </div>
@@ -120,8 +119,8 @@ export function NetworkGuard() {
   if (ethOk && usdcOk) return null;
 
   return (
-    <div className="border-b border-blue-500/20 bg-blue-500/5 px-6 py-3">
-      <div className="max-w-7xl mx-auto flex items-center gap-6 flex-wrap">
+    <div className="border-b border-blue-500/20 bg-blue-500/5 px-4 py-3">
+      <div className="max-w-7xl mx-auto flex items-center gap-3 sm:gap-6 flex-wrap">
         <p className="text-xs text-zinc-400 font-medium uppercase tracking-wide">
           What you need on {targetInfo?.name}:
         </p>

@@ -82,7 +82,7 @@ export default function DocsPage() {
       <Card className="bg-zinc-900/50 border-zinc-800">
         <CardContent className="pt-4">
           <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Índice</p>
-          <div className="grid grid-cols-2 md:grid-cols-1 sm:grid-cols-3 gap-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1">
             {[
               ['#architecture', '1. Arquitectura'],
               ['#contract', '2. Contrato Inteligente'],
