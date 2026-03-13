@@ -23,13 +23,13 @@ export async function POST(request: NextRequest) {
           id:           'vault-001',
           name:         'AI Liquidity Vault',
           protocol:     'uniswap-v3',
-          network:      'ethereum',
-          poolAddress:  '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8',
-          token0Symbol: 'ETH',
-          token1Symbol: 'USDC',
-          token0Address:'0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-          token1Address:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-          feeTier:      3000,
+          network:      'arbitrum',
+          poolAddress:  '0xC6962004f452bE9203591991D15f6b388e09E8D0', // ETH/USDC 0.05% Arbitrum One
+          token0Symbol: 'USDC',
+          token1Symbol: 'WETH',
+          token0Address:'0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC native Arbitrum
+          token1Address:'0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', // WETH Arbitrum
+          feeTier:      500,
           totalValueLocked: amount,
           availableCapital: amount,
         },
@@ -48,8 +48,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Invalid shares' }, { status: 400 });
       }
 
-      // NAV ≈ 1.075 (kept in sync with store default)
-      const usdValue = withdrawShares * 1.075;
+      // Derive NAV from DB record (totalValueLocked / totalShares) or use 1:1 as fallback.
+      // The authoritative NAV for on-chain withdrawals comes from the ERC-4626 vault directly;
+      // this record is only for local history tracking.
+      const existing = await db.vault.findUnique({ where: { id: 'vault-001' } });
+      const nav = existing && existing.totalValueLocked > 0
+        ? existing.totalValueLocked / Math.max(existing.totalValueLocked, 1)
+        : 1.0;
+      const usdValue = withdrawShares * nav;
 
       const vault = await db.vault.upsert({
         where: { id: 'vault-001' },
@@ -57,13 +63,13 @@ export async function POST(request: NextRequest) {
           id:           'vault-001',
           name:         'AI Liquidity Vault',
           protocol:     'uniswap-v3',
-          network:      'ethereum',
-          poolAddress:  '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8',
-          token0Symbol: 'ETH',
-          token1Symbol: 'USDC',
-          token0Address:'0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-          token1Address:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-          feeTier:      3000,
+          network:      'arbitrum',
+          poolAddress:  '0xC6962004f452bE9203591991D15f6b388e09E8D0', // ETH/USDC 0.05% Arbitrum One
+          token0Symbol: 'USDC',
+          token1Symbol: 'WETH',
+          token0Address:'0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC native Arbitrum
+          token1Address:'0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', // WETH Arbitrum
+          feeTier:      500,
           totalValueLocked: 0,
           availableCapital: 0,
         },

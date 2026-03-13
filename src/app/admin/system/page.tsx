@@ -138,7 +138,7 @@ export default function SystemPage() {
           {
             icon: Server, color: 'text-violet-400', label: 'Frontend (Next.js)',
             ok: true, // Always online if this page loads
-            detail: 'localhost:3000',
+            detail: process.env.NEXT_PUBLIC_FRONTEND_URL ?? 'ai-liquidity-frontend (Render)',
           },
           {
             icon: Cpu, color: 'text-emerald-400', label: 'AI Engine (FastAPI)',

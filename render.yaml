@@ -90,3 +90,19 @@ services:
         value: https://arb1.arbitrum.io/rpc
       - key: NEXT_PUBLIC_RPC_ARBITRUM_SEPOLIA
         value: https://sepolia-rollup.arbitrum.io/rpc
+
+      # ── Arbitrum pool address (ETH/USDC 0.05%) ──
+      - key: POOL_ADDRESS
+        value: 0xC6962004f452bE9203591991D15f6b388e09E8D0
+
+      # ── Frontend URL (shown in admin system page) ──
+      - key: NEXT_PUBLIC_FRONTEND_URL
+        fromService:
+          name: ai-liquidity-frontend
+          type: web
+          property: url
+
+      # ── Database (SQLite via Prisma — set DATABASE_URL manually in Render dashboard) ──
+      # Example: DATABASE_URL=file:/opt/render/project/src/prisma/prod.db
+      - key: DATABASE_URL
+        sync: false

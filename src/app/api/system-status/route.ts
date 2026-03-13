@@ -19,16 +19,21 @@ export async function GET() {
     );
   }
 
-  const [health, keeper] = await Promise.allSettled([
-    fetch(`${AI_URL}/health`,         { next: { revalidate: 0 } }).then(r => r.json()),
-    fetch(`${AI_URL}/keeper/status`,  { next: { revalidate: 0 } }).then(r => r.json()),
-  ]);
+  try {
+    const [health, keeper] = await Promise.allSettled([
+      fetch(`${AI_URL}/health`,         { next: { revalidate: 0 } }).then(r => r.json()),
+      fetch(`${AI_URL}/keeper/status`,  { next: { revalidate: 0 } }).then(r => r.json()),
+    ]);
 
-  return NextResponse.json({
-    ai_url:  AI_URL,
-    health:  health.status  === 'fulfilled' ? health.value  : null,
-    keeper:  keeper.status  === 'fulfilled' ? keeper.value  : null,
-    health_error:  health.status  === 'rejected' ? String(health.reason)  : null,
-    keeper_error:  keeper.status  === 'rejected' ? String(keeper.reason)  : null,
-  });
+    return NextResponse.json({
+      ai_url:  AI_URL,
+      health:  health.status  === 'fulfilled' ? health.value  : null,
+      keeper:  keeper.status  === 'fulfilled' ? keeper.value  : null,
+      health_error:  health.status  === 'rejected' ? String(health.reason)  : null,
+      keeper_error:  keeper.status  === 'rejected' ? String(keeper.reason)  : null,
+    });
+  } catch (err) {
+    console.error('[/api/system-status]', err);
+    return NextResponse.json({ error: 'Failed to reach AI Engine', ai_url: AI_URL }, { status: 502 });
+  }
 }
