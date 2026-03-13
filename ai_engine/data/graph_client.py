@@ -13,11 +13,15 @@ import structlog
 
 logger = structlog.get_logger()
 
-# Uniswap V3 mainnet subgraph on The Graph decentralized network
+# Uniswap V3 subgraph on The Graph decentralized network.
+# NOTE: this subgraph indexes Ethereum mainnet pools. If DEFAULT_POOL is an
+# Arbitrum pool address, queries against this subgraph will return null — you
+# will need a separate Arbitrum-specific subgraph ID for Arbitrum data.
 SUBGRAPH_ID = "5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV"
 
 # Default pool: ETH/USDC 0.05% on Arbitrum One.
-# Override via POOL_ADDRESS env var (required for non-Arbitrum deployments).
+# Override via POOL_ADDRESS env var. Note that this address must match the
+# chain indexed by SUBGRAPH_ID above.
 DEFAULT_POOL = os.getenv("POOL_ADDRESS", "0xC6962004f452bE9203591991D15f6b388e09E8D0")
 
 
@@ -48,13 +52,15 @@ def _get_subgraph_urls() -> list[str]:
     )
     return urls
 
-# Popular pools available for analysis
+# Reference pools for analysis (Ethereum mainnet addresses — use with mainnet subgraph)
 KNOWN_POOLS = {
-    "eth-usdc-0.3": "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8",
-    "eth-usdc-0.05": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
-    "eth-usdt-0.3": "0x4e68ccd3e89f51c3074ca5072bbac773960dfa36",
-    "btc-eth-0.3": "0xcbcdf9626bc03e24f779434178a73a0b4bad62ed",
-    "eth-dai-0.3": "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8",
+    "eth-usdc-0.3":  "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8",   # mainnet
+    "eth-usdc-0.05": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",   # mainnet
+    "eth-usdt-0.3":  "0x4e68ccd3e89f51c3074ca5072bbac773960dfa36",   # mainnet
+    "btc-eth-0.3":   "0xcbcdf9626bc03e24f779434178a73a0b4bad62ed",   # mainnet
+    "eth-dai-0.3":   "0xc2e9f25be6257c210d7adf0d4cd6e3e881ba25f8",   # mainnet
+    # Arbitrum One — requires Arbitrum-specific subgraph
+    "arb-eth-usdc-0.05": "0xC6962004f452bE9203591991D15f6b388e09E8D0",
 }
 
 

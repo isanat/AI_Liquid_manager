@@ -61,23 +61,24 @@ function EnvRow({ label, envKey, value, required }: { label: string; envKey: str
 }
 
 export default function SystemPage() {
-  const [health, setHealth]     = useState<HealthData | null>(null);
-  const [keeper, setKeeper]     = useState<KeeperState | null>(null);
-  const [loading, setLoading]   = useState(true);
+  const [health, setHealth]         = useState<HealthData | null>(null);
+  const [keeper, setKeeper]         = useState<KeeperState | null>(null);
+  const [aiUrl,  setAiUrl]          = useState<string>('');
+  const [loading, setLoading]       = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  const AI_URL = process.env.NEXT_PUBLIC_AI_ENGINE_URL ?? '';
-
+  // Calls our own Next.js API route (server-side proxy to AI Engine).
+  // This avoids CORS issues and uses AI_ENGINE_URL (fromService) instead
+  // of the hardcoded NEXT_PUBLIC_AI_ENGINE_URL.
   const refresh = async () => {
     setLoading(true);
     try {
-      if (AI_URL) {
-        const [hRes, kRes] = await Promise.allSettled([
-          fetch(`${AI_URL}/health`).then(r => r.json()),
-          fetch(`${AI_URL}/keeper/status`).then(r => r.json()),
-        ]);
-        if (hRes.status === 'fulfilled') setHealth(hRes.value);
-        if (kRes.status === 'fulfilled') setKeeper(kRes.value);
+      const res = await fetch('/api/system-status', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.health) setHealth(data.health);
+        if (data.keeper) setKeeper(data.keeper);
+        if (data.ai_url) setAiUrl(data.ai_url);
       }
     } finally {
       setLoading(false);
@@ -137,12 +138,12 @@ export default function SystemPage() {
           {
             icon: Server, color: 'text-violet-400', label: 'Frontend (Next.js)',
             ok: true, // Always online if this page loads
-            detail: 'localhost:3000',
+            detail: process.env.NEXT_PUBLIC_FRONTEND_URL ?? 'ai-liquidity-frontend (Render)',
           },
           {
             icon: Cpu, color: 'text-emerald-400', label: 'AI Engine (FastAPI)',
             ok: health ? health.status === 'healthy' : null,
-            detail: AI_URL || 'URL não configurada',
+            detail: aiUrl || 'Ligando via /api/system-status…',
           },
           {
             icon: Zap, color: 'text-amber-400', label: 'Keeper Bot',
@@ -167,7 +168,7 @@ export default function SystemPage() {
       </div>
 
       {/* AI Engine Health */}
-      {AI_URL ? (
+      {health ? (
         <Card className="bg-zinc-900/50 border-zinc-800">
           <CardHeader>
             <CardTitle className="text-zinc-100 flex items-center gap-2">
@@ -178,12 +179,12 @@ export default function SystemPage() {
           <CardContent>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: 'Status', value: health?.status ?? '—' },
-                { label: 'Modelo carregado', value: health?.model_loaded ? 'Sim' : 'Não' },
-                { label: 'Versão do modelo', value: health?.model_version ?? '—' },
-                { label: 'Fonte de dados', value: health?.data_source ?? '—' },
-                { label: 'Uptime', value: uptime },
-                { label: 'URL', value: AI_URL },
+                { label: 'Status',            value: health?.status        ?? '—' },
+                { label: 'Modelo carregado',  value: health?.model_loaded  ? 'Sim' : 'Não' },
+                { label: 'Versão do modelo',  value: health?.model_version ?? '—' },
+                { label: 'Fonte de dados',    value: health?.data_source   ?? '—' },
+                { label: 'Uptime',            value: uptime },
+                { label: 'URL (server-side)', value: aiUrl || '—' },
               ].map(r => (
                 <div key={r.label} className="flex justify-between py-2 border-b border-zinc-800/50 last:border-0 col-span-1">
                   <span className="text-xs text-zinc-400">{r.label}</span>
@@ -193,15 +194,16 @@ export default function SystemPage() {
             </div>
           </CardContent>
         </Card>
-      ) : (
+      ) : !loading && (
         <Card className="bg-rose-500/5 border-rose-500/20">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
               <XCircle className="h-4 w-4 text-rose-400" />
-              <p className="text-sm text-rose-300 font-medium">NEXT_PUBLIC_AI_ENGINE_URL não configurado</p>
+              <p className="text-sm text-rose-300 font-medium">AI Engine não responde</p>
             </div>
             <p className="text-xs text-zinc-500 mt-1 ml-6">
-              Adicione a variável de ambiente no Render.com para ver o status do AI Engine aqui.
+              Verifique se o serviço <code className="text-zinc-400">ai-liquidity-engine</code> está online no Render.com
+              e se <code className="text-zinc-400">AI_ENGINE_URL</code> está ligado via fromService no Blueprint.
             </p>
           </CardContent>
         </Card>
@@ -257,7 +259,7 @@ export default function SystemPage() {
             </div>
           ) : (
             <div className="text-center py-6 text-zinc-600 text-sm">
-              {AI_URL ? 'Não foi possível obter status do keeper.' : 'Configure NEXT_PUBLIC_AI_ENGINE_URL para ver o status.'}
+              {loading ? 'A carregar…' : 'Não foi possível obter status do keeper. Verifique se o AI Engine está online.'}
             </div>
           )}
         </CardContent>

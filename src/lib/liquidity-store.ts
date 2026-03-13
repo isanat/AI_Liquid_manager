@@ -202,12 +202,12 @@ export const useLiquidityStore = create<LiquidityStore>((set, get) => ({
   vault: {
     id: 'vault-001',
     name: 'AI Liquidity Vault',
-    totalAssets: 12_500_000,
-    totalShares: 11_625_000,
-    nav: 1.075,
+    totalAssets: 0,        // loaded from on-chain via vault-contract.ts / wagmi
+    totalShares: 0,
+    nav: 1.0,              // ERC-4626 starts at 1.0 (no gains yet); updated from chain
     strategy: 'adaptive-range',
-    lastRebalance: new Date(Date.now() - 3_600_000 * 3),
-    investors: 47,
+    lastRebalance: new Date(),
+    investors: 0,
   },
 
   positions: INITIAL_POSITIONS,
@@ -215,39 +215,39 @@ export const useLiquidityStore = create<LiquidityStore>((set, get) => ({
   poolData: POOL_DATA,
 
   metrics: {
-    totalTVL: 12_500_000,
-    totalFees24h: 38_500,
-    totalVolume24h: 14_200_000,
-    activePositions: 2,
-    totalInvestors: 47,
-    avgAPY: 0.285,
-    rebalancesToday: 2,
-    systemHealth: 98.5,
+    totalTVL: 0,
+    totalFees24h: 0,
+    totalVolume24h: 0,
+    activePositions: 0,
+    totalInvestors: 0,
+    avgAPY: 0,
+    rebalancesToday: 0,
+    systemHealth: 0,
   },
 
   systemStatus: {
-    vaultConnected: true,
-    strategyControllerActive: true,
-    aiEngineReady: true,
-    dataIndexerSynced: true,
-    executionEngineReady: true,
+    vaultConnected: false,      // updated after chain + AI engine checks
+    strategyControllerActive: false,
+    aiEngineReady: false,
+    dataIndexerSynced: false,
+    executionEngineReady: false,
     lastUpdate: new Date(),
   },
 
   regime: {
     type: 'range',
-    confidence: 0.78,
-    detectedAt: new Date(Date.now() - 3_600_000 * 12),
-    indicators: { trendStrength: 0.25, volatilityLevel: 0.45, volumeProfile: 0.68 },
+    confidence: 0,
+    detectedAt: new Date(),
+    indicators: { trendStrength: 0, volatilityLevel: 0, volumeProfile: 0 },
   },
 
   riskMetrics: {
-    impermanentLoss: 0.023,
-    maxDrawdown: 0.085,
-    var95: 0.042,
-    sharpeRatio: 2.1,
-    sortinoRatio: 2.8,
-    calmarRatio: 1.9,
+    impermanentLoss: 0,
+    maxDrawdown: 0,
+    var95: 0,
+    sharpeRatio: 0,
+    sortinoRatio: 0,
+    calmarRatio: 0,
   },
 
   currentCycle: null,

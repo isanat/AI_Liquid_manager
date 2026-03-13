@@ -12,7 +12,8 @@ import { NextResponse } from 'next/server';
 // ── The Graph config ──────────────────────────────────────────────────────────
 
 const SUBGRAPH_ID = '5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV';
-const DEFAULT_POOL = '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8'; // ETH/USDC 0.3%
+// ETH/USDC 0.05% on Arbitrum One — same pool used by the vault contract
+const DEFAULT_POOL = process.env.POOL_ADDRESS ?? '0xC6962004f452bE9203591991D15f6b388e09E8D0';
 
 function getSubgraphUrls(): string[] {
   const urls: string[] = [];
@@ -296,6 +297,7 @@ async function buildFallback() {
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function GET(request: Request) {
+  try {
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action') ?? 'market';
   const pool = searchParams.get('pool') ?? DEFAULT_POOL;
@@ -367,5 +369,9 @@ export async function GET(request: Request) {
 
     default:
       return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
+  }
+  } catch (err) {
+    console.error('[/api/liquidity]', err);
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

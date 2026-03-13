@@ -43,7 +43,7 @@ export function OpenPositionModal({ open, onClose, currentPrice, aiRangeWidth, a
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
 
-  const feeTier = 3000;
+  const feeTier = 500; // ETH/USDC 0.05% pool on Arbitrum (matches vault contract)
   const spacing = TICK_SPACING[feeTier];
 
   // Prefill from AI suggestion

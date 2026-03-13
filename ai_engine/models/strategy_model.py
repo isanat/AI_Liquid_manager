@@ -362,38 +362,41 @@ class LiquidityStrategyModel:
         return ". ".join(reasons[:3]) + "." if reasons else "Standard allocation applied."
     
     def save(self, path: Path):
-        """Save models to disk"""
+        """Save models to disk. Raises RuntimeError on failure to avoid silent partial writes."""
         path.mkdir(parents=True, exist_ok=True)
-        
-        joblib.dump(self.range_model, path / "range_model.joblib")
-        joblib.dump(self.alloc_core_model, path / "alloc_core_model.joblib")
-        joblib.dump(self.alloc_def_model, path / "alloc_def_model.joblib")
-        joblib.dump(self.alloc_opp_model, path / "alloc_opp_model.joblib")
-        joblib.dump(self.regime_model, path / "regime_model.joblib")
-        joblib.dump(self.scaler, path / "scaler.joblib")
-        joblib.dump({
-            'feature_importance': self.feature_importance,
-            'model_version': self.model_version,
-            'config': self.config,
-        }, path / "metadata.joblib")
-        
-        logger.info("Models saved", path=str(path))
-    
+        try:
+            joblib.dump(self.range_model, path / "range_model.joblib")
+            joblib.dump(self.alloc_core_model, path / "alloc_core_model.joblib")
+            joblib.dump(self.alloc_def_model, path / "alloc_def_model.joblib")
+            joblib.dump(self.alloc_opp_model, path / "alloc_opp_model.joblib")
+            joblib.dump(self.regime_model, path / "regime_model.joblib")
+            joblib.dump(self.scaler, path / "scaler.joblib")
+            joblib.dump({
+                'feature_importance': self.feature_importance,
+                'model_version': self.model_version,
+                'config': self.config,
+            }, path / "metadata.joblib")
+            logger.info("Models saved", path=str(path))
+        except Exception as exc:
+            raise RuntimeError(f"Failed to save models to {path}: {exc}") from exc
+
     def load(self, path: Path):
-        """Load models from disk"""
-        self.range_model = joblib.load(path / "range_model.joblib")
-        self.alloc_core_model = joblib.load(path / "alloc_core_model.joblib")
-        self.alloc_def_model = joblib.load(path / "alloc_def_model.joblib")
-        self.alloc_opp_model = joblib.load(path / "alloc_opp_model.joblib")
-        self.regime_model = joblib.load(path / "regime_model.joblib")
-        self.scaler = joblib.load(path / "scaler.joblib")
-        
-        metadata = joblib.load(path / "metadata.joblib")
-        self.feature_importance = metadata['feature_importance']
-        self.model_version = metadata['model_version']
-        self.is_trained = True
-        
-        logger.info("Models loaded", path=str(path), version=self.model_version)
+        """Load models from disk. Raises RuntimeError on missing or corrupt files."""
+        try:
+            self.range_model = joblib.load(path / "range_model.joblib")
+            self.alloc_core_model = joblib.load(path / "alloc_core_model.joblib")
+            self.alloc_def_model = joblib.load(path / "alloc_def_model.joblib")
+            self.alloc_opp_model = joblib.load(path / "alloc_opp_model.joblib")
+            self.regime_model = joblib.load(path / "regime_model.joblib")
+            self.scaler = joblib.load(path / "scaler.joblib")
+
+            metadata = joblib.load(path / "metadata.joblib")
+            self.feature_importance = metadata['feature_importance']
+            self.model_version = metadata['model_version']
+            self.is_trained = True
+            logger.info("Models loaded", path=str(path), version=self.model_version)
+        except Exception as exc:
+            raise RuntimeError(f"Failed to load models from {path}: {exc}") from exc
 
 
 class RuleBasedFallback:

@@ -188,7 +188,7 @@ class LiquidityBacktester:
                 self.daily_rebalances[date_key] = 0
             
             if self.daily_rebalances[date_key] < self.max_rebalances_per_day:
-                rebalance_decision = self._should_rebalance(price, features, output)
+                rebalance_decision = self._should_rebalance(price, features, output, timestamp)
                 if rebalance_decision:
                     self._rebalance(price, output, timestamp)
                     self.daily_rebalances[date_key] += 1
@@ -237,40 +237,43 @@ class LiquidityBacktester:
                 pos.fees_earned_1 += fees
     
     def _should_rebalance(
-        self, 
-        current_price: float, 
+        self,
+        current_price: float,
         features: MarketFeatures,
-        output: StrategyOutput
+        output: StrategyOutput,
+        timestamp: Optional[datetime] = None,
     ) -> bool:
         """Determine if rebalancing is needed"""
-        
+
         # No active positions - need to deploy
         if not any(p.is_active for p in self.positions):
             return True
-        
+
         # Check if price is outside current range
         for pos in self.positions:
             if not pos.is_active:
                 continue
-            
+
             price_lower = self._tick_to_price(pos.tick_lower)
             price_upper = self._tick_to_price(pos.tick_upper)
-            
+
             # Price outside range
             if current_price < price_lower * 0.98 or current_price > price_upper * 1.02:
                 return True
-            
+
             # Volatility regime change
             if output.detected_regime == MarketRegime.HIGH_VOL:
                 if features.volatility_1d > output.rebalance_threshold:
                     return True
-        
-        # Time-based rebalance (every 3 days)
-        if self.positions:
-            oldest = min(p.entry_time for p in self.positions if p.is_active)
-            if datetime.utcnow() - oldest > timedelta(days=3):
+
+        # Time-based rebalance (every 3 days) — use simulation timestamp, not wall clock
+        active_positions = [p for p in self.positions if p.is_active]
+        if active_positions:
+            now = timestamp or datetime.utcnow()
+            oldest = min(p.entry_time for p in active_positions)
+            if now - oldest > timedelta(days=3):
                 return True
-        
+
         return False
     
     def _rebalance(self, price: float, output: StrategyOutput, timestamp: datetime):
@@ -303,7 +306,7 @@ class LiquidityBacktester:
         # Calculate new ranges
         tick = self._price_to_tick(price)
         range_width = output.range_width / 100  # Convert to decimal
-        tick_spacing = 60  # For 0.3% fee tier
+        tick_spacing = 10  # For 0.05% fee tier (matches vault contract)
         
         # Core position
         core_pct = output.core_allocation / 100
@@ -404,9 +407,12 @@ class LiquidityBacktester:
     
     def _compute_results(self, price_history: pd.DataFrame) -> BacktestResult:
         """Compute final metrics from backtest"""
-        
+
+        if not self.equity_curve:
+            raise ValueError("Backtest produced no equity data — price_history may be empty or all prices were zero")
+
         equity_arr = np.array(self.equity_curve)
-        
+
         # Basic returns
         total_return = (equity_arr[-1] - self.initial_capital) / self.initial_capital
         

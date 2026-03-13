@@ -15,6 +15,7 @@ import pandas as pd
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
+import httpx
 import structlog
 
 from models.types import MarketFeatures
@@ -293,8 +294,9 @@ class FeatureEngineer:
         
         if not gk_values:
             return 0.04
-        
-        return float(np.sqrt(np.mean(gk_values) * 24 * 365))
+
+        mean_gk = max(0.0, np.mean(gk_values))  # guard against negative mean (co > hl case)
+        return float(np.sqrt(mean_gk * 24 * 365))
     
     def _compute_trend(self, values: List[float]) -> float:
         """Compute trend direction (-1 to 1)"""
@@ -304,9 +306,11 @@ class FeatureEngineer:
         values_arr = np.array(values)
         x = np.arange(len(values_arr))
         
-        # Linear regression slope
+        # Linear regression slope — polyfit is unstable on constant arrays
+        if np.std(values_arr) == 0:
+            return 0.0
         slope = np.polyfit(x, values_arr, 1)[0]
-        
+
         # Normalize by average value
         avg = np.mean(values_arr)
         return float(slope / avg) if avg > 0 else 0.0
@@ -396,7 +400,19 @@ class DataFetcher:
             fees_24h = float(latest.get('feesUSD', 0) or 0) * 24
             total_liquidity = float(latest.get('tvlUSD', tvl) or tvl)
         else:
-            current_price = price or 1850.0
+            # Both pool state and hourly history unavailable — try CoinGecko as last resort
+            current_price = price or 0.0
+            if not current_price:
+                try:
+                    async with httpx.AsyncClient(timeout=5.0) as client:
+                        resp = await client.get(
+                            "https://api.coingecko.com/api/v3/simple/price",
+                            params={"ids": "ethereum", "vs_currencies": "usd"},
+                        )
+                        resp.raise_for_status()
+                        current_price = float(resp.json()["ethereum"]["usd"])
+                except Exception:
+                    logger.warning("DataFetcher.get_features: all price sources unavailable")
             volume_24h = 12_000_000.0
             fees_24h = 36_000.0
             total_liquidity = tvl or 25_000_000.0
