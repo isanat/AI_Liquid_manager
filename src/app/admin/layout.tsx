@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, Globe, Activity, Code2,
-  DollarSign, ChevronRight, Zap, Shield, Menu, X,
+  DollarSign, ChevronRight, Zap, Shield, Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -136,7 +136,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 size="icon"
                 className="h-9 w-9 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
               >
-                {drawerOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent
