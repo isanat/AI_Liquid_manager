@@ -181,7 +181,13 @@ export function UniswapPositions() {
 
       setPositions(loaded);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load positions');
+      const msg = e instanceof Error ? e.message : String(e);
+      // "returned no data (0x)" means contract not deployed on this network (e.g. Arbitrum Sepolia)
+      setError(
+        msg.includes('returned no data') || msg.includes('"0x"')
+          ? 'Uniswap V3 not available on this network'
+          : 'Failed to load positions'
+      );
     } finally {
       setLoading(false);
     }
