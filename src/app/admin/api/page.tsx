@@ -58,11 +58,11 @@ function Endpoint({
               <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">Parâmetros</p>
               <div className="space-y-1">
                 {params.map(([name, type, req, desc_]) => (
-                  <div key={name} className="flex items-start gap-3 text-xs">
-                    <code className="font-mono text-emerald-400 w-32 shrink-0">{name}</code>
-                    <span className="text-zinc-600 w-16 shrink-0">{type}</span>
+                  <div key={name} className="flex items-start gap-2 text-xs flex-wrap sm:flex-nowrap">
+                    <code className="font-mono text-emerald-400 w-24 sm:w-32 shrink-0">{name}</code>
+                    <span className="text-zinc-600 w-12 sm:w-16 shrink-0">{type}</span>
                     <Badge variant="outline" className={`text-[9px] shrink-0 ${req === 'required' ? 'text-rose-400 border-rose-500/30' : 'text-zinc-500 border-zinc-700'}`}>{req}</Badge>
-                    <span className="text-zinc-500">{desc_}</span>
+                    <span className="text-zinc-500 min-w-0 break-words">{desc_}</span>
                   </div>
                 ))}
               </div>

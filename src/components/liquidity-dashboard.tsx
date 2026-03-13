@@ -318,7 +318,7 @@ function VaultManager() {
 
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
-      <CardHeader className="pb-4">
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-500/5">
@@ -345,7 +345,7 @@ function VaultManager() {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
         {/* On-chain stats */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
@@ -568,7 +568,7 @@ function StrategyController() {
   
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
-      <CardHeader className="pb-4">
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-violet-500/20 to-violet-500/5">
@@ -584,7 +584,7 @@ function StrategyController() {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           {phases.map((phase, i) => {
             const isActive = currentCycle && i === cyclePhase;
@@ -693,7 +693,7 @@ function AIStrategyEngine() {
   
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
-      <CardHeader className="pb-4">
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-500/5">
@@ -709,7 +709,7 @@ function AIStrategyEngine() {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
         <div>
           <p className="text-xs text-muted-foreground mb-3">Model Inputs</p>
           <div className="space-y-3">
@@ -790,7 +790,7 @@ function RangeOptimizer() {
   
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
-      <CardHeader className="pb-4">
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-500/5">
@@ -803,7 +803,7 @@ function RangeOptimizer() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
         <div className="flex items-center justify-center">
           <PieChart width={160} height={160}>
             <Pie
@@ -906,7 +906,7 @@ function ExecutionEngine() {
   
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
-      <CardHeader className="pb-4">
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-rose-500/20 to-rose-500/5">
@@ -919,7 +919,7 @@ function ExecutionEngine() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">Active Positions</p>
           <ScrollArea className="h-44">
@@ -1027,7 +1027,7 @@ function RiskDashboard() {
   
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
-      <CardHeader className="pb-4">
+      <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-rose-500/20 to-rose-500/5">
@@ -1040,7 +1040,7 @@ function RiskDashboard() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
         <div className="p-3 rounded-lg bg-background/50 border border-border/50">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted-foreground">Market Regime</span>
