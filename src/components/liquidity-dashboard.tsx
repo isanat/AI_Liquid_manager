@@ -158,7 +158,7 @@ function MetricCard({
   
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">{title}</p>
@@ -394,7 +394,7 @@ function VaultManager() {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Deposit USDC</p>
                 <input
@@ -1264,8 +1264,8 @@ function DataLayer() {
               <CardDescription>Real-time market metrics collection</CardDescription>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="hidden sm:flex bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
               <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
               Live
             </Badge>
@@ -1310,15 +1310,23 @@ function SystemStatusFooter() {
   ];
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border/50 px-6 py-3 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-6">
+    <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border/50 px-4 sm:px-6 py-2 sm:py-3 z-50">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+        {/* Mobile: colored dots only. Desktop: dots + labels */}
+        <div className="flex items-center gap-3 sm:gap-5 overflow-x-auto">
           {components.map((comp) => (
-            <StatusIndicator key={comp.name} status={comp.status} label={comp.name} />
+            <div key={comp.name} className="flex items-center gap-1.5 shrink-0">
+              <div className={cn(
+                "w-2 h-2 rounded-full shrink-0",
+                comp.status ? "bg-emerald-500 animate-pulse" : "bg-red-500"
+              )} />
+              <span className="hidden sm:inline text-xs text-muted-foreground whitespace-nowrap">{comp.name}</span>
+            </div>
           ))}
         </div>
-        <div className="text-xs text-muted-foreground">
-          Last Update: {systemStatus.lastUpdate.toLocaleTimeString()}
+        <div className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+          <span className="hidden sm:inline">Last Update: </span>
+          {systemStatus.lastUpdate.toLocaleTimeString()}
         </div>
       </div>
     </div>
@@ -1389,31 +1397,33 @@ export default function LiquidityManagerDashboard() {
   }, [updateMarketData]);
   
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-14 sm:pb-20">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500">
-                <Droplets className="h-6 w-6 text-white" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            {/* Logo */}
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 shrink-0">
+                <Droplets className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold">AI Liquidity Manager</h1>
-                <p className="text-sm text-muted-foreground">Adaptive Range Strategy Engine</p>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl font-bold truncate">AI Liquidity Manager</h1>
+                <p className="hidden sm:block text-sm text-muted-foreground">Adaptive Range Strategy Engine</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+            {/* Right actions */}
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+              <Badge variant="outline" className="hidden sm:flex bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
                 System Online
               </Badge>
               <a
                 href="/admin"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-700 text-xs text-zinc-400 hover:text-zinc-100 hover:border-zinc-600 transition-all"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg border border-zinc-700 text-xs text-zinc-400 hover:text-zinc-100 hover:border-zinc-600 transition-all"
               >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                Admin
+                <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span className="hidden sm:inline">Admin</span>
               </a>
               <WalletConnect />
             </div>
@@ -1425,7 +1435,7 @@ export default function LiquidityManagerDashboard() {
       <NetworkGuard />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {/* Metrics Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <MetricCard
