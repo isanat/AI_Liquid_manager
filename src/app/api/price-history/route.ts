@@ -14,12 +14,14 @@ export async function GET() {
 
     const res = await fetch(url, { headers, next: { revalidate: 300 } });
     if (!res.ok) {
-      return NextResponse.json({ error: 'upstream error', status: res.status }, { status: 502 });
+      // Return empty dataset so the chart renders gracefully instead of crashing
+      console.warn('[/api/price-history] upstream error', res.status);
+      return NextResponse.json({ prices: [], error: 'upstream error', status: res.status });
     }
     const data = await res.json();
     return NextResponse.json(data);
   } catch (err) {
     console.error('[/api/price-history]', err);
-    return NextResponse.json({ error: 'fetch failed' }, { status: 502 });
+    return NextResponse.json({ prices: [], error: 'fetch failed' });
   }
 }

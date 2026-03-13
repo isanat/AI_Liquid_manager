@@ -31,7 +31,7 @@ import {
   FlaskConical,
   Globe,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -96,22 +96,15 @@ const ERC20_BALANCE_ABI = [
 
 // ─── Connector picker dialog ──────────────────────────────────────────────────
 
-/** True when running in a mobile browser (not SSR) */
-function isMobileBrowser() {
-  if (typeof window === 'undefined') return false;
-  return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-}
-
-/** True when MetaMask (or any injected provider) is available */
-function isMetaMaskInjected() {
-  if (typeof window === 'undefined') return false;
-  return !!(window as { ethereum?: unknown }).ethereum;
-}
-
 function ConnectorDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { connect, connectors, isPending } = useConnect();
-  const mobile = isMobileBrowser();
-  const metamaskInjected = isMetaMaskInjected();
+  // Defer browser checks to client-side to avoid SSR hydration mismatch
+  const [mobile, setMobile] = useState(false);
+  const [metamaskInjected, setMetamaskInjected] = useState(false);
+  useEffect(() => {
+    setMobile(/Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent));
+    setMetamaskInjected(!!(window as { ethereum?: unknown }).ethereum);
+  }, []);
 
   const labelFor = (id: string) => {
     if (id.includes('metaMask') || id === 'injected') return 'MetaMask';
@@ -129,7 +122,7 @@ function ConnectorDialog({ open, onClose }: { open: boolean; onClose: () => void
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="bg-zinc-900 border-zinc-800 max-w-sm">
+      <DialogContent className="bg-zinc-900 border-zinc-800 max-w-sm" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="text-zinc-100">Connect Wallet</DialogTitle>
         </DialogHeader>
