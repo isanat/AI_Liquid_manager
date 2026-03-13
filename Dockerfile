@@ -12,6 +12,17 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# NEXT_PUBLIC_* vars must be present at build time (next build bakes them in).
+# Render passes all env vars as --build-arg automatically when ARG is declared here.
+ARG NEXT_PUBLIC_VAULT_ADDRESS
+ARG NEXT_PUBLIC_CHAIN_ID
+ARG NEXT_PUBLIC_AI_ENGINE_URL
+ARG NEXT_PUBLIC_WC_PROJECT_ID
+ENV NEXT_PUBLIC_VAULT_ADDRESS=$NEXT_PUBLIC_VAULT_ADDRESS
+ENV NEXT_PUBLIC_CHAIN_ID=$NEXT_PUBLIC_CHAIN_ID
+ENV NEXT_PUBLIC_AI_ENGINE_URL=$NEXT_PUBLIC_AI_ENGINE_URL
+ENV NEXT_PUBLIC_WC_PROJECT_ID=$NEXT_PUBLIC_WC_PROJECT_ID
+
 # Disable telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
