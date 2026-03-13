@@ -23,8 +23,9 @@ import type {
 // ── Static pool info (address is real) ───────────────────────────────────────
 
 const POOL_DATA: PoolData = {
-  // ETH/USDC 0.05% pool on Arbitrum One (also correct for Arb Sepolia testnet equivalent)
-  address: '0xC6962004f452bE9203591991D15f6b388e09E8D0',
+  address: process.env.NEXT_PUBLIC_CHAIN_ID === '421614'
+    ? '0x77F8dA77c8fb5ADAf3088937B934beC2B0ff97bF'  // ETH/USDC Arbitrum Sepolia
+    : '0xC6962004f452bE9203591991D15f6b388e09E8D0',  // ETH/USDC Arbitrum One
   token0: {
     symbol: 'USDC',
     name: 'USD Coin',

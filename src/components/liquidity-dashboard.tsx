@@ -500,7 +500,9 @@ function StrategyController() {
     toast({ title: 'Strategy cycle started', description: 'Fetching live market data and running AI inference…' });
 
     // Call Python AI engine via proxy for live inference on the ETH/USDC pool
-    const POOL = '0xC6962004f452bE9203591991D15f6b388e09E8D0';
+    const POOL = process.env.NEXT_PUBLIC_CHAIN_ID === '421614'
+      ? '0x77F8dA77c8fb5ADAf3088937B934beC2B0ff97bF'  // Arbitrum Sepolia
+      : '0xC6962004f452bE9203591991D15f6b388e09E8D0'; // Arbitrum One
     try {
       const res = await fetch(`/api/ai?action=pool&pool=${POOL}`);
       if (res.ok) {

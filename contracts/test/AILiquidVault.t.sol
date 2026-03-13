@@ -34,7 +34,14 @@ contract AILiquidVaultTest is Test {
 
     function setUp() public {
         vm.startPrank(owner);
-        vault = new AILiquidVault(USDC, keeper, feeDest);
+        // NPM and WETH = Arbitrum One addresses (fork test runs against Arb One)
+        vault = new AILiquidVault(
+            USDC,
+            0xC36442b4a4522E871399CD717aBDD847Ab11FE88, // NPM Arbitrum One
+            0x82aF49447D8a07e3bd95BD0d56f35241523fBab1, // WETH Arbitrum One
+            keeper,
+            feeDest
+        );
         vm.stopPrank();
 
         // Give alice and bob USDC by impersonating a known whale

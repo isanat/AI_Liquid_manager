@@ -28,5 +28,10 @@ export const wagmiConfig = createConfig({
   ssr: true,
 });
 
-// ETH/USDC 0.05% pool on Arbitrum One
-export const ETH_USDC_POOL = '0xC6962004f452bE9203591991D15f6b388e09E8D0' as const;
+// ETH/USDC 0.05% pool — network-aware
+// Arbitrum Sepolia: 0x77F8dA77c8fb5ADAf3088937B934beC2B0ff97bF (deployed Dec 2024)
+// Arbitrum One:     0xC6962004f452bE9203591991D15f6b388e09E8D0
+export const ETH_USDC_POOL =
+  process.env.NEXT_PUBLIC_CHAIN_ID === '421614'
+    ? '0x77F8dA77c8fb5ADAf3088937B934beC2B0ff97bF'
+    : '0xC6962004f452bE9203591991D15f6b388e09E8D0';
