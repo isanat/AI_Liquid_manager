@@ -219,13 +219,13 @@ export default function SystemPage() {
               {errorMsg?.includes('not configured') ? (
                 <p>
                   <strong className="text-zinc-400">AI_ENGINE_URL não está definida no servidor.</strong>{' '}
-                  Vá ao Render → <code className="text-zinc-400">ai-liquidity-frontend</code> → Environment e adicione:
+                  Vá ao Render → <code className="text-zinc-400">ai-liquid-frontend</code> → Environment e adicione:
                   <br/>
-                  <code className="text-emerald-400">AI_ENGINE_URL = https://ai-liquidity-engine.onrender.com</code>
+                  <code className="text-emerald-400">AI_ENGINE_URL = https://ai-liquid-manager.onrender.com</code>
                 </p>
               ) : (
                 <p>
-                  O serviço <code className="text-zinc-400">ai-liquidity-engine</code> pode estar a dormir (Render free tier adormece após 15 min).
+                  O serviço <code className="text-zinc-400">ai-liquid-manager</code> pode estar a dormir (Render free tier adormece após 15 min).
                   Aguarde 30–60 segundos e clique em <strong className="text-zinc-400">Actualizar</strong>.
                 </p>
               )}
