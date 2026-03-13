@@ -10,13 +10,25 @@ import { injected, coinbaseWallet, walletConnect } from 'wagmi/connectors';
 // WalletConnect Project ID — get one free at https://cloud.walletconnect.com
 const WC_PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID ?? 'demo-project-id';
 
+const FRONTEND_URL =
+  process.env.NEXT_PUBLIC_FRONTEND_URL ?? 'https://ai-liquidity-frontend.onrender.com';
+
 export const wagmiConfig = createConfig({
   // Arbitrum One first = default chain for the app
   chains: [arbitrum, arbitrumSepolia, mainnet, base, optimism],
   connectors: [
     injected({ target: 'metaMask' }),
     coinbaseWallet({ appName: 'AI Liquidity Manager' }),
-    walletConnect({ projectId: WC_PROJECT_ID }),
+    walletConnect({
+      projectId: WC_PROJECT_ID,
+      metadata: {
+        name: 'AI Liquidity Manager',
+        description: 'AI-powered Uniswap V3 liquidity management',
+        url: FRONTEND_URL,
+        icons: [`${FRONTEND_URL}/favicon.ico`],
+      },
+      showQrModal: true,
+    }),
   ],
   transports: {
     [arbitrum.id]:        http(process.env.NEXT_PUBLIC_RPC_ARBITRUM        ?? 'https://arb1.arbitrum.io/rpc'),
