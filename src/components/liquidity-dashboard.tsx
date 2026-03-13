@@ -600,7 +600,7 @@ function StrategyController() {
           <div className="text-xs">
             <p className="text-muted-foreground">Cycle Interval</p>
             <p className="font-medium">
-              {keeperStatus ? `${Math.round((keeperStatus as { interval_seconds?: number }).interval_seconds ?? 900 / 60)} min` : '15 min'}
+              {keeperStatus ? `${Math.round(((keeperStatus as { interval_seconds?: number }).interval_seconds ?? 900) / 60)} min` : '15 min'}
             </p>
           </div>
           <div className="text-xs">

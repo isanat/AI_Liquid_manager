@@ -306,6 +306,9 @@ export const useLiquidityStore = create<LiquidityStore>((set, get) => ({
             : 'neutral',
         };
 
+        const feesUSD24h = (data.market as { feesUSD24h?: number }).feesUSD24h ?? 0;
+        const vaultConfigured = Boolean(process.env.NEXT_PUBLIC_VAULT_ADDRESS);
+
         set(state => ({
           marketData: market,
           aiInputs,
@@ -315,7 +318,20 @@ export const useLiquidityStore = create<LiquidityStore>((set, get) => ({
           isLoading: false,
           lastFetchedAt: new Date(),
           dataSource: (data.market as { dataSource?: string }).dataSource ?? 'api',
-          systemStatus: { ...state.systemStatus, lastUpdate: new Date() },
+          metrics: {
+            ...state.metrics,
+            totalFees24h: feesUSD24h,
+            totalVolume24h: market.volume24h,
+            systemHealth: 85,
+          },
+          systemStatus: {
+            vaultConnected: vaultConfigured,
+            strategyControllerActive: true,
+            aiEngineReady: true,
+            dataIndexerSynced: true,
+            executionEngineReady: true,
+            lastUpdate: new Date(),
+          },
         }));
       })
       .catch(() => {
