@@ -101,11 +101,14 @@ contract AILiquidVault is ERC4626, Ownable2Step, ReentrancyGuard, Pausable {
 
     // ── Constants ──────────────────────────────────────────────────────────────
 
-    /// @dev Uniswap V3 NonfungiblePositionManager — same address on all EVM chains
-    address public constant NPM = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
+    /// @dev Uniswap V3 NonfungiblePositionManager — set at deploy time (differs per network)
+    /// Arbitrum One:    0xC36442b4a4522E871399CD717aBDD847Ab11FE88
+    /// Arbitrum Sepolia: 0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65
+    address public immutable NPM;
 
-    /// @dev WETH on Arbitrum One (used for LP position token1)
-    address public constant WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    /// @dev WETH — set at deploy time (differs per network)
+    /// Arbitrum One + Sepolia: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+    address public immutable WETH;
 
     uint256 public constant BPS_DENOMINATOR  = 10_000;
     uint256 public constant SECONDS_PER_YEAR = 365 days;
@@ -147,16 +150,22 @@ contract AILiquidVault is ERC4626, Ownable2Step, ReentrancyGuard, Pausable {
     // ── Constructor ────────────────────────────────────────────────────────────
 
     /**
-     * @param _usdc            USDC token address (changes per network — see .env.example)
+     * @param _usdc            USDC token address (changes per network)
+     * @param _npm             Uniswap V3 NonfungiblePositionManager address for this network
+     * @param _weth            WETH address for this network
      * @param _strategyManager Keeper EOA that can call rebalance/collectFees
      * @param _feeRecipient    Address that receives management + performance fees
      */
-    constructor(address _usdc, address _strategyManager, address _feeRecipient)
+    constructor(address _usdc, address _npm, address _weth, address _strategyManager, address _feeRecipient)
         ERC4626(IERC20(_usdc))
         ERC20("AI Liquid Vault", "vAI")
         Ownable(msg.sender)
     {
         require(_usdc            != address(0), "AILiquidVault: zero USDC");
+        require(_npm             != address(0), "AILiquidVault: zero NPM");
+        require(_weth            != address(0), "AILiquidVault: zero WETH");
+        NPM  = _npm;
+        WETH = _weth;
         require(_strategyManager != address(0), "AILiquidVault: zero strategy manager");
         require(_feeRecipient    != address(0), "AILiquidVault: zero fee recipient");
         strategyManager  = _strategyManager;

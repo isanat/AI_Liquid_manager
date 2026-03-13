@@ -13,12 +13,10 @@ import {AILiquidVault}   from "../src/AILiquidVault.sol";
  *   STRATEGY_MANAGER       – keeper EOA address (gets strategy manager role)
  *   FEE_RECIPIENT          – address that receives management + performance fees
  *
- * Optional:
- *   USDC_ADDRESS           – override USDC token address (detected automatically by chainId)
- *
- * USDC addresses (auto-detected):
- *   Arbitrum One   (42161)  → 0xaf88d065e77c8cC2239327C5EDb3A432268e5831
- *   Arbitrum Sepolia(421614) → 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d (Circle testnet)
+ * Auto-detected per chainId (no override needed):
+ *   USDC — Circle testnet on Sepolia, native USDC on Arbitrum One
+ *   NPM  — Uniswap V3 NonfungiblePositionManager for this network
+ *   WETH — Wrapped ETH for this network
  *
  * Usage:
  *   # Arbitrum Sepolia (testnet)
@@ -32,12 +30,19 @@ import {AILiquidVault}   from "../src/AILiquidVault.sol";
  *     --broadcast --verify -vvvv
  */
 contract Deploy is Script {
-    // USDC native on Arbitrum One
+    // ── USDC addresses ──────────────────────────────────────────────────────────
     address constant USDC_ARBITRUM_ONE     = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
-    // Circle's testnet USDC on Arbitrum Sepolia
     address constant USDC_ARBITRUM_SEPOLIA = 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d;
-    // Circle's testnet USDC on Ethereum Sepolia
     address constant USDC_ETH_SEPOLIA      = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+
+    // ── Uniswap V3 NonfungiblePositionManager ───────────────────────────────────
+    // Arbitrum One:     canonical CREATE2 address
+    address constant NPM_ARBITRUM_ONE     = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
+    // Arbitrum Sepolia: 0x248AB79... is the factory; 0x6b2937... is the NPM
+    address constant NPM_ARBITRUM_SEPOLIA = 0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65;
+
+    // ── WETH (same address on Arbitrum One and Arbitrum Sepolia) ────────────────
+    address constant WETH_ARBITRUM = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
     function run() external {
         address strategyManager = vm.envAddress("STRATEGY_MANAGER");
@@ -46,21 +51,25 @@ contract Deploy is Script {
         require(strategyManager != address(0), "Deploy: STRATEGY_MANAGER not set");
         require(feeRecipient    != address(0), "Deploy: FEE_RECIPIENT not set");
 
-        // Auto-select USDC by chain; allow override via env var
+        // Auto-select addresses by chain
         address usdc;
-        try vm.envAddress("USDC_ADDRESS") returns (address overrideUsdc) {
-            usdc = overrideUsdc;
-            console.log("USDC override:    ", usdc);
-        } catch {
-            if (block.chainid == 42161) {
-                usdc = USDC_ARBITRUM_ONE;
-            } else if (block.chainid == 421614) {
-                usdc = USDC_ARBITRUM_SEPOLIA;
-            } else if (block.chainid == 11155111) {
-                usdc = USDC_ETH_SEPOLIA;
-            } else {
-                revert("Deploy: unknown chainId - set USDC_ADDRESS manually");
-            }
+        address npm;
+        address weth;
+
+        if (block.chainid == 42161) {
+            usdc = USDC_ARBITRUM_ONE;
+            npm  = NPM_ARBITRUM_ONE;
+            weth = WETH_ARBITRUM;
+        } else if (block.chainid == 421614) {
+            usdc = USDC_ARBITRUM_SEPOLIA;
+            npm  = NPM_ARBITRUM_SEPOLIA;
+            weth = WETH_ARBITRUM;
+        } else if (block.chainid == 11155111) {
+            usdc = USDC_ETH_SEPOLIA;
+            npm  = NPM_ARBITRUM_ONE; // Ethereum Sepolia uses same NPM address
+            weth = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14; // WETH on Eth Sepolia
+        } else {
+            revert("Deploy: unknown chainId");
         }
 
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
@@ -71,14 +80,18 @@ contract Deploy is Script {
         console.log("Strategy manager: ", strategyManager);
         console.log("Fee recipient:    ", feeRecipient);
         console.log("USDC:             ", usdc);
+        console.log("NPM:              ", npm);
+        console.log("WETH:             ", weth);
 
         vm.startBroadcast(deployerKey);
 
-        AILiquidVault vault = new AILiquidVault(usdc, strategyManager, feeRecipient);
+        AILiquidVault vault = new AILiquidVault(usdc, npm, weth, strategyManager, feeRecipient);
 
         console.log("AILiquidVault deployed at:", address(vault));
         console.log("Asset (USDC):             ", address(vault.asset()));
         console.log("Share token (vAI):        vAI");
+        console.log("NPM:                      ", vault.NPM());
+        console.log("WETH:                     ", vault.WETH());
         console.log("Strategy manager:         ", vault.strategyManager());
 
         vm.stopBroadcast();

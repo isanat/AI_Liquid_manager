@@ -654,6 +654,35 @@ async def keeper_status():
     return state
 
 
+@app.post("/keeper/trigger")
+async def keeper_trigger():
+    """Manually trigger one keeper cycle immediately (for dashboard 'Rebalance' button)."""
+    import asyncio
+    from keeper.keeper import keeper_state
+
+    vault_addr  = os.getenv("VAULT_ADDRESS")
+    keeper_key  = os.getenv("KEEPER_PRIVATE_KEY")
+    rpc_url     = os.getenv("RPC_URL_ARBITRUM")
+
+    if not (vault_addr and keeper_key and rpc_url):
+        missing = [k for k, v in {
+            "VAULT_ADDRESS": vault_addr,
+            "KEEPER_PRIVATE_KEY": keeper_key,
+            "RPC_URL_ARBITRUM": rpc_url,
+        }.items() if not v]
+        raise HTTPException(
+            status_code=503,
+            detail=f"Keeper not configured. Missing env vars: {', '.join(missing)}"
+        )
+
+    if keeper_state.get("status") == "running":
+        return {"queued": False, "message": "Keeper cycle already in progress"}
+
+    from keeper.keeper import keeper_job
+    asyncio.create_task(keeper_job())
+    return {"queued": True, "message": "Keeper cycle triggered"}
+
+
 @app.get("/features/importance")
 async def feature_importance():
     """Feature importance from trained model, or rule-based ranking."""

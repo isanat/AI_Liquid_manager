@@ -83,7 +83,7 @@ function Endpoint({
 
 export default function ApiPage() {
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8">
 
       {/* Header */}
       <div>
@@ -93,7 +93,7 @@ export default function ApiPage() {
           <ChevronRight className="h-3 w-3" />
           <span className="text-zinc-300">API Reference</span>
         </div>
-        <h1 className="text-3xl font-bold text-zinc-100 flex items-center gap-3">
+        <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100 flex items-center gap-3">
           <Code2 className="h-7 w-7 text-amber-400" />
           API Reference
         </h1>
@@ -104,7 +104,7 @@ export default function ApiPage() {
 
       {/* Base URLs */}
       <Card className="bg-zinc-900/50 border-zinc-800">
-        <CardContent className="pt-4 grid grid-cols-2 gap-4">
+        <CardContent className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 space-y-1">
             <div className="flex items-center gap-2">
               <Server className="h-3.5 w-3.5 text-emerald-400" />

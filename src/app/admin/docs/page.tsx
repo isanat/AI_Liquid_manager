@@ -62,7 +62,7 @@ function Row({ label, value, detail }: { label: string; value: string; detail?: 
 
 export default function DocsPage() {
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6">
 
       {/* Header */}
       <div>
@@ -72,7 +72,7 @@ export default function DocsPage() {
           <ChevronRight className="h-3 w-3" />
           <span className="text-zinc-300">Como Funciona</span>
         </div>
-        <h1 className="text-3xl font-bold text-zinc-100">Documentação Técnica Completa</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">Documentação Técnica Completa</h1>
         <p className="text-zinc-400 mt-1 text-sm">
           Tudo que você precisa saber para entender, operar e customizar o sistema.
         </p>
@@ -82,7 +82,7 @@ export default function DocsPage() {
       <Card className="bg-zinc-900/50 border-zinc-800">
         <CardContent className="pt-4">
           <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Índice</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+          <div className="grid grid-cols-2 md:grid-cols-1 sm:grid-cols-3 gap-1">
             {[
               ['#architecture', '1. Arquitectura'],
               ['#contract', '2. Contrato Inteligente'],
@@ -137,7 +137,7 @@ CAMADA DE DEX
   │  Pool: USDC/WETH 0.05% → gera fees de trading       │
   └─────────────────────────────────────────────────────┘`}
         </Block>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { name: 'Frontend', tech: 'Next.js 15 / React / Tailwind', port: ':3000', color: 'text-violet-400' },
             { name: 'AI Engine', tech: 'FastAPI / LightGBM / Python 3.11', port: ':8000', color: 'text-emerald-400' },
@@ -159,7 +159,7 @@ CAMADA DE DEX
           Os investidores depositam USDC e recebem shares <Mono>vAI</Mono> que representam a sua quota do vault.
           À medida que o vault ganha fees de LP, o preço das shares sobe automaticamente.
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             {[
               { label: 'Standard', value: 'ERC-4626 (Tokenized Vault)' },
@@ -198,7 +198,7 @@ function sharePrice() external view returns (uint256) {
         </Block>
         <div className="space-y-2">
           <p className="text-xs font-semibold text-zinc-400">Roles e Permissões</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {[
               { role: 'owner', perms: ['setFees()', 'setStrategyManager()', 'pause()', 'emergencyExit()'], color: 'text-rose-400' },
               { role: 'strategyManager (keeper)', perms: ['rebalance()', 'collectFees()'], color: 'text-amber-400' },
@@ -221,7 +221,7 @@ function sharePrice() external view returns (uint256) {
           Em vez de um LLM (lento, caro, imprevisível), o sistema usa <strong className="text-zinc-200">LightGBM</strong> —
           um gradient boosted decision tree que corre em {'<'}10ms, é determinístico e treina com dados reais da blockchain.
         </p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { name: 'Range Width Predictor', type: 'Regressão', desc: 'Decide a largura ±% da range (4%–15%)', color: 'text-violet-400' },
             { name: 'Capital Allocator', type: 'Multi-Regressão', desc: 'Divide o capital: core/defensivo/oportunista', color: 'text-emerald-400' },
@@ -330,7 +330,7 @@ PASSO 8: Actualizar keeper_state
   → last_run, last_tx_hash, total_rebalances
   → Disponível em GET /keeper/status`}
         </Block>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { label: 'Gas Rebalance', value: '~800,000 gas', detail: 'Buffer: 110% do gas atual' },
             { label: 'Gas collectFees', value: '~300,000 gas', detail: 'Por posição ativa' },
@@ -346,7 +346,7 @@ PASSO 8: Actualizar keeper_state
           O vault tem <strong className="text-zinc-200">dois tipos de taxa</strong> que geram receita para o operador.
           Ambas são cobradas automaticamente on-chain em cada interacção, sem intervenção manual.
         </p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/20 space-y-2">
             <p className="text-xs font-bold text-emerald-400">Taxa de Gestão (Management Fee)</p>
             <p className="text-2xl font-bold text-zinc-100">2% / ano</p>
@@ -388,7 +388,7 @@ PASSO 8: Actualizar keeper_state
 
       {/* 6. Data Sources */}
       <Section id="data" icon={Database} color="text-cyan-400" title="6. Fontes de Dados">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-4 rounded-lg bg-zinc-800/50 border border-zinc-700/50 space-y-2">
             <p className="text-xs font-bold text-cyan-400">The Graph — Subgraph Uniswap V3</p>
             <p className="text-[10px] text-zinc-500">Dados on-chain: preço horário, volume, TVL, fees, liquidez por tick</p>
@@ -406,7 +406,7 @@ PASSO 8: Actualizar keeper_state
 
       {/* 7. Frontend */}
       <Section id="frontend" icon={Code2} color="text-violet-400" title="7. Frontend — Stack Técnico">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
             {[
               { label: 'Framework', value: 'Next.js 15 (App Router)' },

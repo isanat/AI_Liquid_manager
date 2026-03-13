@@ -43,7 +43,7 @@ function Step({ n, icon: Icon, color, title, desc, sub }: {
 
 export default function WhitelabelPage() {
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8">
 
       {/* Header */}
       <div>
@@ -58,7 +58,7 @@ export default function WhitelabelPage() {
             <Globe className="h-7 w-7 text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-zinc-100">Guia de Revenda White-Label</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">Guia de Revenda White-Label</h1>
             <p className="text-zinc-400 mt-1 text-sm max-w-2xl">
               Como transformar este sistema numa empresa de gestão de fundos DeFi.
               Tudo que você precisa para lançar, vender e lucrar — mesmo sem saber programar.
@@ -82,7 +82,7 @@ export default function WhitelabelPage() {
             Em termos simples: os seus clientes depositam USDC, a IA gere o dinheiro deles em pools de liquidez
             do Uniswap V3, e você ganha uma percentagem de todo o dinheiro gerido — automaticamente, 24/7, sem intervenção humana.
           </p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { icon: Building2, color: 'text-violet-400', label: 'Gestor de Fundo', desc: 'Você é o operador. Define as taxas. Recebe as comissões.' },
               { icon: Users,     color: 'text-emerald-400', label: 'Os seus Clientes', desc: 'Depositam USDC. Recebem rendimentos automáticos.' },
@@ -231,7 +231,7 @@ export default function WhitelabelPage() {
                 cobrar uma mensalidade aos clientes para usar a plataforma, uma taxa de onboarding,
                 ou vender acesso a grandes investidores com depósito mínimo.
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { model: 'Mensalidade SaaS', example: '$99–$499/mês por cliente', icon: RefreshCw, color: 'text-amber-400' },
                   { model: 'Setup Fee', example: '$500–$2,000 por cliente', icon: Package, color: 'text-cyan-400' },
@@ -260,7 +260,7 @@ export default function WhitelabelPage() {
             Para Quem Vender? — Perfis de Cliente Ideal
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             {
               title: 'Investidores Crypto Experientes',
@@ -302,7 +302,7 @@ export default function WhitelabelPage() {
       </Card>
 
       {/* What you own vs what you need */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="bg-zinc-900/50 border-zinc-800">
           <CardHeader>
             <CardTitle className="text-sm text-zinc-100 flex items-center gap-2">
@@ -396,7 +396,7 @@ export default function WhitelabelPage() {
           <CardDescription>O que você pode mudar para ter o seu próprio produto</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               {
                 category: 'Configuração de Taxas',
@@ -462,7 +462,7 @@ export default function WhitelabelPage() {
               <p className="text-xs text-zinc-500">Projecção conservadora com 10 clientes de $50k cada = $500k AUM</p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-lg bg-zinc-900/60 border border-zinc-800 text-center">
               <p className="text-xs text-zinc-500 mb-1">Taxa de Gestão (2%)</p>
               <p className="text-2xl font-bold text-emerald-400">$10,000</p>

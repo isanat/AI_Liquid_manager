@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 
 # ─── Contract addresses (Arbitrum One) ───────────────────────────────────────
 
-USDC_ADDRESS   = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+# Configurable via env — defaults to Arbitrum One; override for testnet
+USDC_ADDRESS   = os.getenv("USDC_ADDRESS", "0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
 
 TICK_SPACING   = 10   # 0.05% pool
 TICK_LIMIT     = 887272
