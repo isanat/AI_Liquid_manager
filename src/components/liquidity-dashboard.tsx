@@ -1261,7 +1261,7 @@ function DataLayer() {
             </div>
             <div>
               <CardTitle className="text-lg">Data Layer</CardTitle>
-              <CardDescription>Real-time market metrics collection</CardDescription>
+              <CardDescription className="hidden sm:block">Real-time market metrics collection</CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1269,8 +1269,11 @@ function DataLayer() {
               <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
               Live
             </Badge>
-            <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isLoading}>
-              {isLoading ? <><Minus className="h-3 w-3 mr-1 animate-spin" />Loading…</> : 'Refresh'}
+            <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isLoading} className="shrink-0">
+              {isLoading
+                ? <><RefreshCw className="h-3 w-3 sm:mr-1 animate-spin" /><span className="hidden sm:inline">Loading…</span></>
+                : <><RefreshCw className="h-3 w-3 sm:mr-1" /><span className="hidden sm:inline">Refresh</span></>
+              }
             </Button>
           </div>
         </div>
@@ -1401,30 +1404,42 @@ export default function LiquidityManagerDashboard() {
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 shrink-0">
-                <Droplets className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                <Droplets className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-bold truncate">AI Liquidity Manager</h1>
-                <p className="hidden sm:block text-sm text-muted-foreground">Adaptive Range Strategy Engine</p>
+              <div>
+                <h1 className="font-bold leading-none">
+                  {/* Mobile: short title */}
+                  <span className="text-sm sm:hidden">AI Liquidity</span>
+                  {/* Desktop: full title */}
+                  <span className="hidden sm:inline text-xl">AI Liquidity Manager</span>
+                </h1>
+                <p className="hidden sm:block text-xs text-muted-foreground mt-0.5">Adaptive Range Strategy Engine</p>
               </div>
             </div>
             {/* Right actions */}
-            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-              <Badge variant="outline" className="hidden sm:flex bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Badge — desktop only */}
+              <Badge variant="outline" className="hidden sm:flex bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
                 System Online
               </Badge>
+              {/* Admin — icon + text on desktop, icon-only on mobile */}
               <a
                 href="/admin"
-                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg border border-zinc-700 text-xs text-zinc-400 hover:text-zinc-100 hover:border-zinc-600 transition-all"
+                className="flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-600 transition-all"
+                title="Admin"
               >
-                <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                <span className="hidden sm:inline">Admin</span>
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="hidden sm:inline text-xs">Admin</span>
               </a>
+              {/* Wallet — icon-only on mobile (text hidden internally in WalletConnect) */}
               <WalletConnect />
             </div>
           </div>

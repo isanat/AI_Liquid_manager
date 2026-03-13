@@ -187,11 +187,13 @@ export function WalletConnect() {
           className="border-zinc-700 hover:border-emerald-500/50 hover:bg-emerald-500/5"
         >
           {isConnecting ? (
-            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            <RefreshCw className="h-4 w-4 sm:mr-2 animate-spin" />
           ) : (
-            <Wallet className="h-4 w-4 mr-2" />
+            <Wallet className="h-4 w-4 sm:mr-2" />
           )}
-          {isConnecting ? 'Connecting…' : 'Connect Wallet'}
+          <span className="hidden sm:inline">
+            {isConnecting ? 'Connecting…' : 'Connect Wallet'}
+          </span>
         </Button>
         <ConnectorDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
       </>
@@ -209,11 +211,11 @@ export function WalletConnect() {
         className="bg-amber-500 hover:bg-amber-400 text-black font-semibold"
       >
         {isSwitching ? (
-          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+          <RefreshCw className="h-4 w-4 sm:mr-2 animate-spin" />
         ) : (
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="h-4 w-4 sm:mr-2" />
         )}
-        Switch to {activeMeta.label}
+        <span className="hidden sm:inline">Switch to {activeMeta.label}</span>
       </Button>
     );
   }
@@ -228,9 +230,9 @@ export function WalletConnect() {
           size="sm"
           className="border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10"
         >
-          <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2" />
-          {shortAddr(address)}
-          <ChevronDown className="h-3 w-3 ml-2 text-zinc-400" />
+          <div className="w-2 h-2 rounded-full bg-emerald-500 sm:mr-2" />
+          <span className="hidden sm:inline">{shortAddr(address)}</span>
+          <ChevronDown className="hidden sm:block h-3 w-3 ml-1 text-zinc-400" />
         </Button>
       </DropdownMenuTrigger>
 
