@@ -67,19 +67,30 @@ export default function SystemPage() {
   const [loading, setLoading]       = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   // Calls our own Next.js API route (server-side proxy to AI Engine).
   // This avoids CORS issues and uses AI_ENGINE_URL (fromService) instead
   // of the hardcoded NEXT_PUBLIC_AI_ENGINE_URL.
   const refresh = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
       const res = await fetch('/api/system-status', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.health) setHealth(data.health);
-        if (data.keeper) setKeeper(data.keeper);
-        if (data.ai_url) setAiUrl(data.ai_url);
+      const data = await res.json();
+      if (!res.ok) {
+        // 503 = AI_ENGINE_URL not set on server, 502 = URL set but fetch failed
+        setErrorMsg(data.error ?? `HTTP ${res.status}`);
+        return;
       }
+      if (data.health) setHealth(data.health);
+      if (data.keeper) setKeeper(data.keeper);
+      if (data.ai_url) setAiUrl(data.ai_url);
+      if (!data.health) {
+        setErrorMsg(data.health_error ?? 'AI Engine não respondeu (pode estar a acordar — tente de novo em 30s)');
+      }
+    } catch (e) {
+      setErrorMsg('Falha ao chamar /api/system-status — verifique o servidor Next.js');
     } finally {
       setLoading(false);
       setLastRefresh(new Date());
@@ -196,15 +207,29 @@ export default function SystemPage() {
         </Card>
       ) : !loading && (
         <Card className="bg-rose-500/5 border-rose-500/20">
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 space-y-3">
             <div className="flex items-center gap-2">
               <XCircle className="h-4 w-4 text-rose-400" />
               <p className="text-sm text-rose-300 font-medium">AI Engine não responde</p>
             </div>
-            <p className="text-xs text-zinc-500 mt-1 ml-6">
-              Verifique se o serviço <code className="text-zinc-400">ai-liquidity-engine</code> está online no Render.com
-              e se <code className="text-zinc-400">AI_ENGINE_URL</code> está ligado via fromService no Blueprint.
-            </p>
+            {errorMsg && (
+              <p className="text-xs font-mono text-rose-300/70 ml-6 break-all">{errorMsg}</p>
+            )}
+            <div className="ml-6 space-y-1 text-xs text-zinc-500">
+              {errorMsg?.includes('not configured') ? (
+                <p>
+                  <strong className="text-zinc-400">AI_ENGINE_URL não está definida no servidor.</strong>{' '}
+                  Vá ao Render → <code className="text-zinc-400">ai-liquidity-frontend</code> → Environment e adicione:
+                  <br/>
+                  <code className="text-emerald-400">AI_ENGINE_URL = https://ai-liquidity-engine.onrender.com</code>
+                </p>
+              ) : (
+                <p>
+                  O serviço <code className="text-zinc-400">ai-liquidity-engine</code> pode estar a dormir (Render free tier adormece após 15 min).
+                  Aguarde 30–60 segundos e clique em <strong className="text-zinc-400">Actualizar</strong>.
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
