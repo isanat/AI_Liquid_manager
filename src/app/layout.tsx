@@ -11,11 +11,18 @@ import { Web3Provider } from "@/components/web3-provider";
 
 export const metadata: Metadata = {
   title: "AI Liquidity Manager - Adaptive Range Strategy Engine",
-  description: "Institutional-grade AI-powered liquidity management for Uniswap V3 and Orca. Adaptive range optimization, regime detection, and automated rebalancing.",
-  keywords: ["DeFi", "Liquidity", "Uniswap V3", "Orca", "AI", "Automated Trading", "LP", "Market Making"],
+  description: "Institutional-grade AI-powered liquidity management for Uniswap V3. Adaptive range optimization, regime detection, and automated rebalancing.",
+  keywords: ["DeFi", "Liquidity", "Uniswap V3", "AI", "Automated Trading", "LP", "Market Making"],
   authors: [{ name: "AI Liquidity Manager" }],
+  manifest: "/manifest.json",
   icons: {
     icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "AI Liquidity",
   },
   openGraph: {
     title: "AI Liquidity Manager",
@@ -31,6 +38,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#10b981" />
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased bg-background text-foreground`}
       >
