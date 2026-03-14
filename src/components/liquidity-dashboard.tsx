@@ -65,6 +65,8 @@ import { useLiquidityStore } from '@/lib/liquidity-store';
 import { cn } from '@/lib/utils';
 import { WalletConnect, ACTIVE_CHAIN_ID } from '@/components/wallet-connect';
 import { NetworkGuard } from '@/components/network-guard';
+import { TransactionHistory } from '@/components/transaction-history';
+import { MobileNav } from '@/components/mobile-nav';
 
 // Derive network label and explorer from ACTIVE_CHAIN_ID (set via NEXT_PUBLIC_CHAIN_ID)
 const NETWORK_LABEL   = ACTIVE_CHAIN_ID === 421614 ? 'Arbitrum Sepolia' : 'Arbitrum One';
@@ -1449,73 +1451,85 @@ export default function LiquidityManagerDashboard() {
       <NetworkGuard />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        {/* Metrics Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <MetricCard
-            title="Total TVL"
-            value={metrics.totalTVL}
-            prefix="$"
-            change={2.4}
-            icon={Wallet}
-            color="emerald"
-          />
-          <MetricCard
-            title="Fees 24h"
-            value={metrics.totalFees24h}
-            prefix="$"
-            change={12.8}
-            icon={Coins}
-            color="amber"
-          />
-          <MetricCard
-            title="Avg APY"
-            value={metrics.avgAPY * 100}
-            suffix="%"
-            icon={TrendingUp}
-            color="cyan"
-          />
-          <MetricCard
-            title="System Health"
-            value={metrics.systemHealth}
-            suffix="%"
-            icon={Activity}
-            color="violet"
-          />
-        </div>
-        
-        {/* Data Layer */}
-        <div className="mb-6">
-          <DataLayer />
-        </div>
-        
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
-            <VaultManager />
-            <StrategyController />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-20 sm:pb-6">
+
+        {/* ── Overview section ───────────────────────────────────────────────── */}
+        <section id="overview">
+          {/* Metrics Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <MetricCard
+              title="Total TVL"
+              value={metrics.totalTVL}
+              prefix="$"
+              icon={Wallet}
+              color="emerald"
+            />
+            <MetricCard
+              title="Fees 24h"
+              value={metrics.totalFees24h}
+              prefix="$"
+              icon={Coins}
+              color="amber"
+            />
+            <MetricCard
+              title="Est. APY"
+              value={metrics.avgAPY * 100}
+              suffix="%"
+              icon={TrendingUp}
+              color="cyan"
+            />
+            <MetricCard
+              title="System Health"
+              value={metrics.systemHealth}
+              suffix="%"
+              icon={Activity}
+              color="violet"
+            />
           </div>
-          
-          {/* Center Column */}
-          <div className="space-y-6">
-            <AIStrategyEngine />
-            <RangeOptimizer />
+
+          {/* Data Layer */}
+          <div className="mb-6">
+            <DataLayer />
           </div>
-          
-          {/* Right Column */}
-          <div className="space-y-6">
-            <ExecutionEngine />
-            <RiskDashboard />
-            <ArchitectureDiagram />
+        </section>
+
+        {/* ── Vault + History section ────────────────────────────────────────── */}
+        <section id="vault" className="scroll-mt-20">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column */}
+            <div className="space-y-6">
+              <VaultManager />
+              <div id="history" className="scroll-mt-20">
+                <TransactionHistory />
+              </div>
+              <div id="strategy" className="scroll-mt-20">
+                <StrategyController />
+              </div>
+            </div>
+
+            {/* Center Column */}
+            <div className="space-y-6">
+              <AIStrategyEngine />
+              <RangeOptimizer />
+            </div>
+
+            {/* Right Column */}
+            <div id="system" className="space-y-6 scroll-mt-20">
+              <ExecutionEngine />
+              <RiskDashboard />
+              <ArchitectureDiagram />
+            </div>
           </div>
-        </div>
-        
+        </section>
+
         {/* Price Chart */}
         <div className="mt-6">
           <PriceChart />
         </div>
       </main>
+
+      {/* Mobile bottom navigation */}
+      <MobileNav />
       
       {/* System Status Footer */}
       <SystemStatusFooter />

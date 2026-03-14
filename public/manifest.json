@@ -1,0 +1,27 @@
+{
+  "name": "AI Liquidity Manager",
+  "short_name": "AI Liquidity",
+  "description": "AI-powered Uniswap V3 liquidity management — adaptive range optimization",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "utilities"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Vault",
+      "url": "/#vault",
+      "description": "Deposit or withdraw USDC"
+    }
+  ]
+}
