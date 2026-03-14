@@ -55,13 +55,13 @@ export function useVaultHistory() {
           address: VAULT_ADDRESS,
           event: DEPOSIT_EVENT,
           args: { owner: address },
-          fromBlock: 'earliest',
+          fromBlock: 0n,
         }),
         publicClient.getLogs({
           address: VAULT_ADDRESS,
           event: WITHDRAW_EVENT,
           args: { owner: address },
-          fromBlock: 'earliest',
+          fromBlock: 0n,
         }),
       ]);
 
