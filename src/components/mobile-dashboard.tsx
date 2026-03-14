@@ -422,7 +422,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
 // ─── Market Tab ────────────────────────────────────────────────────────────────
 
 function MarketTab() {
-  const { marketData, aiOutputs, aiInputs, regime, ranges, updateMarketData } = useLiquidityStore();
+  const { marketData, aiOutputs, aiInputs, regime, ranges, updateMarketData, dataSource, lastFetchedAt } = useLiquidityStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -452,9 +452,32 @@ function MarketTab() {
             <p className="text-4xl font-bold">${marketData.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}</p>
             <p className="text-xs text-zinc-500 mt-1">Pool 0.05% · {NETWORK_LABEL}</p>
           </div>
-          <button onClick={handleRefresh} disabled={refreshing} className="p-2 rounded-lg bg-zinc-800 text-zinc-400">
-            <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <button onClick={handleRefresh} disabled={refreshing} className="p-2 rounded-lg bg-zinc-800 text-zinc-400">
+              <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+            </button>
+            {/* Data source badge */}
+            <span className={cn(
+              'text-[10px] px-2 py-0.5 rounded-full border font-medium',
+              dataSource === 'the-graph'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : dataSource === 'coingecko-price'
+                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                : dataSource === 'static-fallback'
+                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+            )}>
+              {dataSource === 'the-graph' ? '● The Graph' :
+               dataSource === 'coingecko-price' ? '⚠ CoinGecko' :
+               dataSource === 'static-fallback' ? '✕ Fallback' :
+               '○ Loading…'}
+            </span>
+            {lastFetchedAt && (
+              <span className="text-[10px] text-zinc-600">
+                {new Date(lastFetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
         </div>
         <div className="mt-3 pt-3 border-t border-white/5 grid grid-cols-3 gap-2 text-xs text-zinc-500">
           <span>TWAP <span className="block text-zinc-200">${marketData.twap?.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '—'}</span></span>

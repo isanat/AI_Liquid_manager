@@ -1266,9 +1266,21 @@ function DataLayer() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="hidden sm:flex bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" />
-              Live
+            <Badge variant="outline" className={`hidden sm:flex ${
+              dataSource === 'the-graph'        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+              dataSource === 'coingecko-price'  ? 'bg-amber-500/10  text-amber-400  border-amber-500/20'  :
+              dataSource === 'static-fallback'  ? 'bg-rose-500/10   text-rose-400   border-rose-500/20'   :
+                                                  'bg-zinc-500/10   text-zinc-400   border-zinc-500/20'
+            }`}>
+              <div className={`w-2 h-2 rounded-full mr-2 ${
+                dataSource === 'the-graph' ? 'bg-emerald-500 animate-pulse' :
+                dataSource === 'coingecko-price' ? 'bg-amber-500' :
+                dataSource === 'static-fallback' ? 'bg-rose-500' : 'bg-zinc-500'
+              }`} />
+              {dataSource === 'the-graph' ? 'Live · The Graph' :
+               dataSource === 'coingecko-price' ? 'Partial · CoinGecko' :
+               dataSource === 'static-fallback' ? 'Fallback · Offline' :
+               'Loading…'}
             </Badge>
             <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isLoading} className="shrink-0">
               {isLoading
