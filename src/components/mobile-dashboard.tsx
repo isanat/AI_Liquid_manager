@@ -9,8 +9,11 @@ import {
   Settings, Shield, Target, TrendingUp, Wallet, Zap,
 } from 'lucide-react';
 import { WalletConnect, ACTIVE_CHAIN_ID } from '@/components/wallet-connect';
+import { CardInfo } from '@/components/card-info';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { useVaultHistory } from '@/hooks/use-vault-history';
 import { useLiquidityStore } from '@/lib/liquidity-store';
+import { useI18n } from '@/contexts/i18n-context';
 import {
   VAULT_ADDRESS, USDC_ARBITRUM,
   readVaultState, readUserVaultState,
@@ -62,6 +65,7 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
   const { vaultState, userState, isConnected } = useVaultData();
   const { history, loading: histLoading } = useVaultHistory();
   const { marketData, regime } = useLiquidityStore();
+  const { t } = useI18n();
 
   const userUsd = userState ? parseFloat(userState.assetsValueUsd) : 0;
   const totalAssets = vaultState ? parseFloat(vaultState.totalAssetsUsd) : 0;
@@ -80,7 +84,10 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
 
       {/* Hero — My Position */}
       <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 to-cyan-500/10 border border-emerald-500/20 p-5">
-        <p className="text-sm text-zinc-400 mb-1">Minha Posição</p>
+        <div className="flex items-center gap-2 mb-1">
+          <p className="text-sm text-zinc-400">{t('portfolio.myPosition')}</p>
+          <CardInfo tip={t('portfolio.tip')} />
+        </div>
         <div className="flex items-end justify-between">
           <div>
             <p className="text-4xl font-bold tracking-tight">
@@ -88,8 +95,8 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
             </p>
             <p className="text-xs text-zinc-500 mt-1">
               {userState && userState.shares > 0n
-                ? `${parseFloat(formatUnits(userState.shares, 18)).toFixed(4)} vAI shares`
-                : isConnected ? 'Sem posição activa' : 'Conecta a carteira'}
+                ? `${parseFloat(formatUnits(userState.shares, 18)).toFixed(4)} ${t('portfolio.vaiShares')}`
+                : isConnected ? t('portfolio.noPosition') : t('portfolio.connectWallet')}
             </p>
           </div>
           <span className={cn(
@@ -115,27 +122,30 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
           className="flex items-center justify-center gap-2 h-14 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-base transition-colors active:scale-95"
         >
           <ArrowDownLeft className="h-5 w-5" />
-          Depositar
+          {t('portfolio.deposit')}
         </button>
         <button
           onClick={onWithdraw}
           className="flex items-center justify-center gap-2 h-14 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold text-base border border-zinc-700 transition-colors active:scale-95"
         >
           <ArrowUpRight className="h-5 w-5" />
-          Sacar
+          {t('portfolio.withdraw')}
         </button>
       </div>
 
       {/* Últimas transações */}
       <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
         <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-          <p className="text-sm font-medium text-zinc-200">Últimas Transações</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-zinc-200">{t('portfolio.recentTransactions')}</p>
+            <CardInfo tip={t('invest.tip')} />
+          </div>
           {histLoading && <RefreshCw className="h-3.5 w-3.5 text-zinc-500 animate-spin" />}
         </div>
         {!isConnected ? (
-          <p className="px-4 pb-4 text-xs text-zinc-500">Conecta a carteira para ver o histórico</p>
+          <p className="px-4 pb-4 text-xs text-zinc-500">{t('portfolio.connectWallet')}</p>
         ) : history.length === 0 && !histLoading ? (
-          <p className="px-4 pb-4 text-xs text-zinc-500">Nenhuma transação encontrada</p>
+          <p className="px-4 pb-4 text-xs text-zinc-500">{t('portfolio.noTransactions')}</p>
         ) : (
           <div className="divide-y divide-zinc-800">
             {history.slice(0, 3).map((tx, i) => (
@@ -163,26 +173,29 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
       {/* Resumo de mercado */}
       <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-zinc-200">Mercado ETH/USDC</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-zinc-200">{t('portfolio.marketSummary')}</p>
+            <CardInfo tip={t('market.tip')} />
+          </div>
           <span className={cn('text-xs font-medium', regimeColor)}>
             ● {regime?.type ?? 'range'}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-zinc-500 text-xs">Preço ETH</p>
+            <div className="flex items-center gap-1"><p className="text-zinc-500 text-xs">{t('metrics.price.label')}</p><CardInfo tip={t('metrics.price.tip')} /></div>
             <p className="font-semibold">${marketData.price.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
           <div>
-            <p className="text-zinc-500 text-xs">Volume 24h</p>
+            <div className="flex items-center gap-1"><p className="text-zinc-500 text-xs">{t('market.volume24h')}</p><CardInfo tip={t('metrics.volume24h.tip')} /></div>
             <p className="font-semibold">${(marketData.volume24h / 1e6).toFixed(1)}M</p>
           </div>
           <div>
-            <p className="text-zinc-500 text-xs">Volatilidade 1D</p>
+            <div className="flex items-center gap-1"><p className="text-zinc-500 text-xs">{t('market.volatility1d')}</p><CardInfo tip={t('metrics.volatility1d.tip')} /></div>
             <p className="font-semibold">{(marketData.volatility1d * 100).toFixed(2)}%</p>
           </div>
           <div>
-            <p className="text-zinc-500 text-xs">Confiança IA</p>
+            <div className="flex items-center gap-1"><p className="text-zinc-500 text-xs">{t('market.confidence')}</p><CardInfo tip={t('metrics.atr.tip')} /></div>
             <p className="font-semibold">{((regime?.confidence ?? 0) * 100).toFixed(0)}%</p>
           </div>
         </div>
@@ -206,6 +219,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
   const { vaultState, userState, refresh } = useVaultData();
   const { history } = useVaultHistory();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const usdcBal = userState ? parseFloat(formatUnits(userState.usdcBalance, 6)) : 0;
   const userUsd = userState ? parseFloat(userState.assetsValueUsd) : 0;
@@ -284,7 +298,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
             mode === 'deposit' ? 'bg-emerald-500 text-black' : 'text-zinc-400 hover:text-zinc-200',
           )}
         >
-          Depositar
+          {t('invest.depositMode')}
         </button>
         <button
           onClick={() => setMode('withdraw')}
@@ -293,7 +307,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
             mode === 'withdraw' ? 'bg-rose-500 text-white' : 'text-zinc-400 hover:text-zinc-200',
           )}
         >
-          Sacar
+          {t('invest.withdrawMode')}
         </button>
       </div>
 
@@ -392,7 +406,10 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
       {/* Histórico completo */}
       {history.length > 0 && (
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
-          <p className="px-4 pt-4 pb-2 text-sm font-medium text-zinc-200">Histórico Completo</p>
+          <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+            <p className="text-sm font-medium text-zinc-200">{t('invest.fullHistory')}</p>
+            <CardInfo tip={t('invest.tip')} />
+          </div>
           <div className="divide-y divide-zinc-800">
             {history.map((tx, i) => (
               <div key={`${tx.txHash}-${i}`} className="px-4 py-3 flex items-center justify-between">
@@ -423,6 +440,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
 
 function MarketTab() {
   const { marketData, aiOutputs, aiInputs, regime, ranges, updateMarketData, dataSource, lastFetchedAt } = useLiquidityStore();
+  const { t } = useI18n();
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -480,26 +498,36 @@ function MarketTab() {
           </div>
         </div>
         <div className="mt-3 pt-3 border-t border-white/5 grid grid-cols-3 gap-2 text-xs text-zinc-500">
-          <span>TWAP <span className="block text-zinc-200">${marketData.twap?.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '—'}</span></span>
-          <span>Tick <span className="block text-zinc-200">{marketData.tick?.toLocaleString() ?? '—'}</span></span>
-          <span>Vol 1h <span className="block text-zinc-200">${(marketData.volume1h / 1e6).toFixed(1)}M</span></span>
+          <span>
+            <span className="flex items-center gap-1">{t('market.twap')}<CardInfo tip={t('metrics.twap.tip')} /></span>
+            <span className="block text-zinc-200">${marketData.twap?.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '—'}</span>
+          </span>
+          <span>
+            <span className="flex items-center gap-1">{t('market.tick')}<CardInfo tip={t('metrics.tick.tip')} /></span>
+            <span className="block text-zinc-200">{marketData.tick?.toLocaleString() ?? '—'}</span>
+          </span>
+          <span>
+            <span className="flex items-center gap-1">{t('market.vol1h')}</span>
+            <span className="block text-zinc-200">${(marketData.volume1h / 1e6).toFixed(1)}M</span>
+          </span>
         </div>
       </div>
 
       {/* Métricas 2x2 */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: 'Volume 24h',     value: `$${(marketData.volume24h / 1e6).toFixed(1)}M`,       icon: TrendingUp },
-          { label: 'Volatilidade 1D', value: `${(marketData.volatility1d * 100).toFixed(2)}%`,    icon: Activity   },
-          { label: 'Volatilidade 7D', value: `${(marketData.volatility7d * 100).toFixed(2)}%`,    icon: Activity   },
-          { label: 'ATR',            value: `$${marketData.atr?.toFixed(2) ?? '—'}`,              icon: LineChart  },
-          { label: 'Std Deviation',  value: `$${marketData.stdDeviation?.toFixed(2) ?? '—'}`,     icon: LineChart  },
-          { label: 'Liquidez Pool',  value: `$${(marketData.liquidity / 1e6).toFixed(1)}M`,       icon: Droplets   },
-        ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
+          { labelKey: 'market.volume24h',     tipKey: 'metrics.volume24h.tip',   value: `$${(marketData.volume24h / 1e6).toFixed(1)}M`,     icon: TrendingUp },
+          { labelKey: 'market.volatility1d',  tipKey: 'metrics.volatility1d.tip',value: `${(marketData.volatility1d * 100).toFixed(2)}%`,   icon: Activity   },
+          { labelKey: 'market.volatility7d',  tipKey: 'metrics.volatility1d.tip',value: `${(marketData.volatility7d * 100).toFixed(2)}%`,   icon: Activity   },
+          { labelKey: 'market.atr',           tipKey: 'metrics.atr.tip',         value: `$${marketData.atr?.toFixed(2) ?? '—'}`,            icon: LineChart  },
+          { labelKey: 'market.stdDev',        tipKey: 'metrics.stdDev.tip',      value: `$${marketData.stdDeviation?.toFixed(2) ?? '—'}`,   icon: LineChart  },
+          { labelKey: 'market.liquidity',     tipKey: 'metrics.liquidity.tip',   value: `$${(marketData.liquidity / 1e6).toFixed(1)}M`,     icon: Droplets   },
+        ].map(({ labelKey, tipKey, value, icon: Icon }) => (
+          <div key={labelKey} className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Icon className="h-3.5 w-3.5 text-zinc-500" />
-              <p className="text-xs text-zinc-500">{label}</p>
+              <p className="text-xs text-zinc-500">{t(labelKey)}</p>
+              <CardInfo tip={t(tipKey)} />
             </div>
             <p className="text-xl font-bold">{value}</p>
           </div>
@@ -511,17 +539,18 @@ function MarketTab() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Brain className="h-4 w-4 text-violet-400" />
-            <p className="text-sm font-medium text-zinc-200">Regime IA</p>
+            <p className="text-sm font-medium text-zinc-200">{t('market.aiRegime')}</p>
+            <CardInfo tip={t('market.tip')} />
           </div>
           <span className={cn('text-xs px-2.5 py-1 rounded-full border font-medium capitalize', regimeCls)}>
             {regime?.type ?? 'range'}
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-          <div><p className="text-xs text-zinc-500">Confiança</p><p className="font-semibold">{((regime?.confidence ?? 0) * 100).toFixed(0)}%</p></div>
-          <div><p className="text-xs text-zinc-500">Largura Range</p><p className="font-semibold">{aiOutputs.rangeWidth?.toFixed(1) ?? '—'}%</p></div>
-          <div><p className="text-xs text-zinc-500">Rebalance Threshold</p><p className="font-semibold">{((aiOutputs.rebalanceThreshold ?? 0) * 100).toFixed(0)}%</p></div>
-          <div><p className="text-xs text-zinc-500">Tendência</p><p className={cn('font-semibold capitalize', aiInputs.trendDirection === 'up' ? 'text-emerald-400' : aiInputs.trendDirection === 'down' ? 'text-rose-400' : 'text-zinc-400')}>{aiInputs.trendDirection}</p></div>
+          <div><p className="text-xs text-zinc-500">{t('market.confidence')}</p><p className="font-semibold">{((regime?.confidence ?? 0) * 100).toFixed(0)}%</p></div>
+          <div><p className="text-xs text-zinc-500">{t('market.rangeWidth')}</p><p className="font-semibold">{aiOutputs.rangeWidth?.toFixed(1) ?? '—'}%</p></div>
+          <div><p className="text-xs text-zinc-500">{t('market.rebalanceThreshold')}</p><p className="font-semibold">{((aiOutputs.rebalanceThreshold ?? 0) * 100).toFixed(0)}%</p></div>
+          <div><p className="text-xs text-zinc-500">{t('market.trend')}</p><p className={cn('font-semibold capitalize', aiInputs.trendDirection === 'up' ? 'text-emerald-400' : aiInputs.trendDirection === 'down' ? 'text-rose-400' : 'text-zinc-400')}>{aiInputs.trendDirection}</p></div>
         </div>
         {aiOutputs.reasoning && (
           <p className="text-xs text-zinc-500 bg-zinc-800/50 rounded-lg p-2 leading-relaxed">{aiOutputs.reasoning}</p>
@@ -599,6 +628,7 @@ function MarketTab() {
 function SystemTab() {
   const { vaultState } = useVaultData();
   const { systemStatus, metrics, riskMetrics, recentExecutions } = useLiquidityStore();
+  const { t } = useI18n();
   const [keeper, setKeeper] = useState<{ last_run?: string; status?: string; next_run_in_seconds?: number } | null>(null);
 
   useEffect(() => {
@@ -626,19 +656,19 @@ function SystemTab() {
       {/* KPI cards — as quatro métricas principais */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-          <p className="text-xs text-zinc-500 mb-1">Total TVL</p>
+          <div className="flex items-center gap-1 mb-1"><p className="text-xs text-zinc-500">{t('system.tvl')}</p><CardInfo tip="Total Value Locked — total USDC depositado no vault por todos os investidores." /></div>
           <p className="text-2xl font-bold">${metrics.totalTVL.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
         </div>
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-          <p className="text-xs text-zinc-500 mb-1">Fees 24h</p>
+          <div className="flex items-center gap-1 mb-1"><p className="text-xs text-zinc-500">{t('system.fees24h')}</p><CardInfo tip={t('metrics.volume24h.tip')} /></div>
           <p className="text-2xl font-bold">${metrics.totalFees24h.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
         </div>
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-          <p className="text-xs text-zinc-500 mb-1">Est. APY</p>
+          <div className="flex items-center gap-1 mb-1"><p className="text-xs text-zinc-500">{t('system.estApy')}</p><CardInfo tip="APY estimado com base nas taxas geradas nas últimas 24h anualizadas." /></div>
           <p className="text-2xl font-bold">{(metrics.avgAPY * 100).toFixed(1)}%</p>
         </div>
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-          <p className="text-xs text-zinc-500 mb-1">Saúde <span className="text-[10px]">(est.)</span></p>
+          <div className="flex items-center gap-1 mb-1"><p className="text-xs text-zinc-500">{t('system.health')}</p><CardInfo tip="Score de saúde geral do sistema: considera vault ativo, serviços online e posições em range." /></div>
           <p className="text-2xl font-bold">{metrics.systemHealth.toFixed(0)}%</p>
           <div className="mt-1.5 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full" style={{ width: `${metrics.systemHealth}%` }} />
@@ -650,7 +680,8 @@ function SystemTab() {
       <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
         <div className="flex items-center gap-2 mb-3">
           <Activity className="h-4 w-4 text-violet-400" />
-          <p className="text-sm font-medium text-zinc-200">Estado dos Serviços</p>
+          <p className="text-sm font-medium text-zinc-200">{t('system.services')}</p>
+          <CardInfo tip={t('system.tip')} />
         </div>
         <div className="space-y-2 text-sm">
           {[
@@ -701,19 +732,20 @@ function SystemTab() {
       <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="h-4 w-4 text-rose-400" />
-          <p className="text-sm font-medium text-zinc-200">Métricas de Risco</p>
+          <p className="text-sm font-medium text-zinc-200">{t('system.riskMetrics')}</p>
+          <CardInfo tip="Métricas de risco calculadas com base na volatilidade atual e no histórico de posições do vault." />
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           {[
-            { label: 'Impermanent Loss', value: `${(riskMetrics.impermanentLoss * 100).toFixed(2)}%` },
-            { label: 'Max Drawdown',     value: `${(riskMetrics.maxDrawdown * 100).toFixed(2)}%`     },
-            { label: 'VaR 95%',          value: `${(riskMetrics.var95 * 100).toFixed(2)}%`           },
-            { label: 'Sharpe Ratio',     value: riskMetrics.sharpeRatio.toFixed(2)                   },
-            { label: 'Sortino Ratio',    value: riskMetrics.sortinoRatio.toFixed(2)                  },
-            { label: 'Calmar Ratio',     value: riskMetrics.calmarRatio.toFixed(2)                   },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <p className="text-xs text-zinc-500">{label}</p>
+            { labelKey: 'metrics.impermanentLoss.label', tipKey: 'metrics.impermanentLoss.tip', value: `${(riskMetrics.impermanentLoss * 100).toFixed(2)}%` },
+            { labelKey: 'metrics.maxDrawdown.label',     tipKey: 'metrics.maxDrawdown.tip',     value: `${(riskMetrics.maxDrawdown * 100).toFixed(2)}%`     },
+            { labelKey: 'metrics.var95.label',           tipKey: 'metrics.var95.tip',           value: `${(riskMetrics.var95 * 100).toFixed(2)}%`           },
+            { labelKey: 'metrics.sharpe.label',          tipKey: 'metrics.sharpe.tip',          value: riskMetrics.sharpeRatio.toFixed(2)                   },
+            { labelKey: 'metrics.sortino.label',         tipKey: 'metrics.sortino.tip',         value: riskMetrics.sortinoRatio.toFixed(2)                  },
+            { labelKey: 'metrics.calmar.label',          tipKey: 'metrics.calmar.tip',          value: riskMetrics.calmarRatio.toFixed(2)                   },
+          ].map(({ labelKey, tipKey, value }) => (
+            <div key={labelKey}>
+              <div className="flex items-center gap-1 mb-0.5"><p className="text-xs text-zinc-500">{t(labelKey)}</p><CardInfo tip={t(tipKey)} /></div>
               <p className="font-semibold">{value}</p>
             </div>
           ))}
@@ -818,6 +850,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 export function MobileDashboard() {
   const [tab, setTab] = useState<Tab>('portfolio');
   const [investMode, setInvestMode] = useState<'deposit' | 'withdraw'>('deposit');
+  const { t } = useI18n();
 
   const goDeposit = () => { setInvestMode('deposit'); setTab('invest'); };
   const goWithdraw = () => { setInvestMode('withdraw'); setTab('invest'); };
@@ -833,7 +866,10 @@ export function MobileDashboard() {
           </div>
           <span className="font-bold text-sm">AI Liquidity</span>
         </div>
-        <WalletConnect />
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <WalletConnect />
+        </div>
       </header>
 
       {/* Tab content — scrollable */}
@@ -847,7 +883,7 @@ export function MobileDashboard() {
       {/* Bottom Nav */}
       <nav className="shrink-0 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-md safe-area-pb z-40">
         <div className="flex items-stretch">
-          {TABS.map(({ id, label, icon: Icon }) => (
+          {TABS.map(({ id, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -857,7 +893,7 @@ export function MobileDashboard() {
               )}
             >
               <Icon className={cn('h-5 w-5', tab === id && 'drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]')} />
-              <span className="text-[10px] font-medium leading-none">{label}</span>
+              <span className="text-[10px] font-medium leading-none">{t(`tabs.${id}`)}</span>
             </button>
           ))}
         </div>

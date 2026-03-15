@@ -1,0 +1,156 @@
+{
+  "tabs": {
+    "portfolio": "Portefeuille",
+    "invest": "Investir",
+    "market": "Marché",
+    "system": "Système"
+  },
+  "nav": {
+    "connectWallet": "Connecter Portefeuille",
+    "admin": "Admin",
+    "language": "Langue"
+  },
+  "portfolio": {
+    "myPosition": "Ma Position",
+    "noPosition": "Aucune position active",
+    "connectWallet": "Connectez votre portefeuille",
+    "vaiShares": "Parts vAI",
+    "deposit": "Déposer",
+    "withdraw": "Retirer",
+    "recentTransactions": "Transactions Récentes",
+    "noTransactions": "Aucune transaction pour l'instant",
+    "marketSummary": "Résumé du Marché",
+    "tip": "Affiche la valeur actuelle de votre position dans le vault ERC-4626. Calculé comme : vos parts × prix de la part. Le prix de la part augmente à mesure que le vault génère des frais."
+  },
+  "invest": {
+    "depositMode": "Déposer",
+    "withdrawMode": "Retirer",
+    "depositLabel": "Montant USDC",
+    "withdrawLabel": "Parts vAI",
+    "maxButton": "MAX",
+    "confirmDeposit": "Confirmer le Dépôt",
+    "confirmWithdraw": "Confirmer le Retrait",
+    "fullHistory": "Historique Complet",
+    "tip": "Déposez des USDC pour recevoir des parts vAI. Le vault utilise les fonds pour fournir de la liquidité sur Uniswap V3, générant des frais de trading distribués proportionnellement aux investisseurs."
+  },
+  "market": {
+    "ethUsdc": "ETH / USDC",
+    "pool": "Pool 0.05%",
+    "refresh": "Actualiser",
+    "twap": "TWAP",
+    "tick": "Tick",
+    "vol1h": "Vol 1h",
+    "volume24h": "Volume 24h",
+    "volatility1d": "Volatilité 1J",
+    "volatility7d": "Volatilité 7J",
+    "atr": "ATR",
+    "stdDev": "Écart-type",
+    "liquidity": "Liquidité du Pool",
+    "aiRegime": "Régime IA",
+    "confidence": "Confiance",
+    "rangeWidth": "Largeur de Plage",
+    "rebalanceThreshold": "Seuil de Rééquilibrage",
+    "trend": "Tendance",
+    "capitalAllocation": "Allocation du Capital",
+    "rangeConfigs": "Configurations de Plage",
+    "aiInputs": "Entrées IA",
+    "tip": "Données de marché en temps réel du pool ETH/USDC 0.05% sur Uniswap V3. Source : subgraph The Graph ou CoinGecko comme solution de repli."
+  },
+  "system": {
+    "tvl": "TVL",
+    "fees24h": "Frais 24h",
+    "estApy": "APY Est.",
+    "health": "Santé",
+    "services": "Services",
+    "vaultDetails": "Vault ERC-4626",
+    "riskMetrics": "Métriques de Risque",
+    "keeperBot": "Keeper Bot",
+    "executionHistory": "Historique d'Exécution",
+    "links": "Liens",
+    "tip": "État général du système : vault on-chain, services IA, métriques de risque et historique des opérations automatisées."
+  },
+  "metrics": {
+    "price": {
+      "label": "Prix",
+      "tip": "Prix spot actuel de l'ETH en USDC dans le pool Uniswap V3 0.05%. Mis à jour en temps réel à partir des données on-chain."
+    },
+    "tick": {
+      "label": "Tick",
+      "tip": "Tick actuel dans le système de prix discrets d'Uniswap V3. Chaque tick représente un incrément de 0.01% du prix (log₁.₀₀₀₁ du prix). Le tick actuel détermine dans quelles plages de liquidité se trouve le prix."
+    },
+    "twap": {
+      "label": "TWAP",
+      "tip": "Time-Weighted Average Price — moyenne pondérée par le temps, résistante à la manipulation. Calculé à partir d'observations récentes on-chain. Utilisé comme référence de prix sûre par le système IA."
+    },
+    "liquidity": {
+      "label": "Liquidité",
+      "tip": "Liquidité totale disponible dans le pool autour du prix actuel. Une valeur plus élevée signifie moins de glissement pour les traders et plus de frais générés pour les fournisseurs de liquidité."
+    },
+    "volume24h": {
+      "label": "Volume 24h",
+      "tip": "Volume de trading des dernières 24 heures dans le pool ETH/USDC 0.05%. Un volume élevé génère plus de frais pour le vault. Données de The Graph (subgraph Uniswap V3)."
+    },
+    "volatility1d": {
+      "label": "Volatilité 1J",
+      "tip": "Volatilité réalisée sur 1 jour, calculée à partir des rendements logarithmiques horaires de données OHLC réelles. L'IA utilise cette valeur pour déterminer la largeur idéale de la plage de liquidité."
+    },
+    "atr": {
+      "label": "ATR",
+      "tip": "Average True Range — mesure la volatilité du marché par le mouvement de prix moyen. Calculé comme : prix × volatilité 1J. Utilisé par l'IA pour calibrer les seuils de rééquilibrage."
+    },
+    "stdDev": {
+      "label": "Écart-type",
+      "tip": "Écart-type des rendements de prix. Des valeurs élevées indiquent un marché plus volatil. L'IA utilise cette valeur pour ajuster la largeur des plages et l'allocation entre les stratégies (Core/Défensive/Opportuniste)."
+    },
+    "impermanentLoss": {
+      "label": "IL (Perte Impermanente)",
+      "tip": "Perte impermanente estimée de la position actuelle comparée à la simple détention des tokens. C'est une perte temporaire qui survient lorsque le prix s'éloigne du prix d'entrée. L'IA tente de minimiser l'IL par des rééquilibrages."
+    },
+    "maxDrawdown": {
+      "label": "Max Drawdown",
+      "tip": "Plus grande baisse en pourcentage de la valeur du vault depuis le pic historique. Indicateur de risque à la baisse. Une valeur plus basse est meilleure."
+    },
+    "var95": {
+      "label": "VaR 95%",
+      "tip": "Value at Risk à 95% de confiance — perte maximale attendue dans des conditions de marché normales (5% de probabilité de dépasser cette valeur). Calculé en fonction de la volatilité actuelle."
+    },
+    "sharpe": {
+      "label": "Ratio de Sharpe",
+      "tip": "Rendement ajusté au risque. Calculé comme (rendement - taux sans risque) / écart-type. Sharpe > 1 est bon, > 2 est excellent. Mesure le rendement supplémentaire obtenu par unité de risque."
+    },
+    "sortino": {
+      "label": "Ratio de Sortino",
+      "tip": "Similaire au Sharpe, mais ne pénalise que la volatilité négative (downside). Plus pertinent pour les investisseurs soucieux principalement des pertes. Sortino > 1 est bon."
+    },
+    "calmar": {
+      "label": "Ratio de Calmar",
+      "tip": "Rendement annualisé divisé par le Max Drawdown. Mesure l'efficacité du rendement par rapport au pire scénario historique. Calmar > 1 est considéré bon."
+    }
+  },
+  "dataSource": {
+    "theGraph": "● The Graph",
+    "coinGecko": "⚠ CoinGecko",
+    "fallback": "✕ Repli",
+    "loading": "○ Chargement…"
+  },
+  "status": {
+    "live": "En direct",
+    "paused": "En pause",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "synced": "Synchronisé",
+    "ready": "Prêt"
+  },
+  "actions": {
+    "refresh": "Actualiser",
+    "approve": "Approuver USDC",
+    "confirm": "Confirmer",
+    "viewExplorer": "Voir dans l'Explorateur",
+    "adminPanel": "Panneau Admin"
+  },
+  "errors": {
+    "connectWallet": "Veuillez d'abord connecter votre portefeuille",
+    "insufficientBalance": "Solde insuffisant",
+    "transactionFailed": "Transaction échouée"
+  }
+}

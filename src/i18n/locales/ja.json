@@ -1,0 +1,156 @@
+{
+  "tabs": {
+    "portfolio": "ポートフォリオ",
+    "invest": "投資",
+    "market": "マーケット",
+    "system": "システム"
+  },
+  "nav": {
+    "connectWallet": "ウォレット接続",
+    "admin": "管理者",
+    "language": "言語"
+  },
+  "portfolio": {
+    "myPosition": "マイポジション",
+    "noPosition": "アクティブなポジションなし",
+    "connectWallet": "ウォレットを接続してください",
+    "vaiShares": "vAI シェア",
+    "deposit": "預入",
+    "withdraw": "引出",
+    "recentTransactions": "最近の取引",
+    "noTransactions": "取引履歴なし",
+    "marketSummary": "マーケットサマリー",
+    "tip": "ERC-4626 ボールトにおける現在のポジション価値を表示します。計算式：保有シェア数 × シェア価格。ボールトが手数料を獲得するにつれてシェア価格が上昇します。"
+  },
+  "invest": {
+    "depositMode": "預入",
+    "withdrawMode": "引出",
+    "depositLabel": "USDC 金額",
+    "withdrawLabel": "vAI シェア",
+    "maxButton": "最大",
+    "confirmDeposit": "預入を確認",
+    "confirmWithdraw": "引出を確認",
+    "fullHistory": "全履歴",
+    "tip": "USDC を預け入れて vAI シェアを受け取ります。ボールトはその資金を Uniswap V3 での流動性提供に使用し、投資家に比例配分されるトレーディング手数料を生成します。"
+  },
+  "market": {
+    "ethUsdc": "ETH / USDC",
+    "pool": "Pool 0.05%",
+    "refresh": "更新",
+    "twap": "TWAP",
+    "tick": "Tick",
+    "vol1h": "出来高 1時間",
+    "volume24h": "出来高 24時間",
+    "volatility1d": "ボラティリティ 1日",
+    "volatility7d": "ボラティリティ 7日",
+    "atr": "ATR",
+    "stdDev": "標準偏差",
+    "liquidity": "プール流動性",
+    "aiRegime": "AI レジーム",
+    "confidence": "信頼度",
+    "rangeWidth": "レンジ幅",
+    "rebalanceThreshold": "リバランスしきい値",
+    "trend": "トレンド",
+    "capitalAllocation": "資本配分",
+    "rangeConfigs": "レンジ設定",
+    "aiInputs": "AI 入力",
+    "tip": "Uniswap V3 の ETH/USDC 0.05% プールからのリアルタイム市場データ。ソース：The Graph サブグラフ、フォールバックとして CoinGecko。"
+  },
+  "system": {
+    "tvl": "TVL",
+    "fees24h": "手数料 24時間",
+    "estApy": "推定 APY",
+    "health": "ヘルス",
+    "services": "サービス",
+    "vaultDetails": "ERC-4626 ボールト",
+    "riskMetrics": "リスク指標",
+    "keeperBot": "Keeper Bot",
+    "executionHistory": "実行履歴",
+    "links": "リンク",
+    "tip": "システム全体の状態：オンチェーンボールト、AI サービス、リスク指標、自動化された操作の履歴。"
+  },
+  "metrics": {
+    "price": {
+      "label": "価格",
+      "tip": "Uniswap V3 0.05% プールにおける ETH の現在のスポット価格（USDC 建て）。オンチェーンデータからリアルタイムで更新されます。"
+    },
+    "tick": {
+      "label": "Tick",
+      "tip": "Uniswap V3 の離散価格システムにおける現在の Tick。各 Tick は価格の 0.01% の増分（価格の log₁.₀₀₀₁）を表します。現在の Tick が価格がどの流動性レンジに入るかを決定します。"
+    },
+    "twap": {
+      "label": "TWAP",
+      "tip": "時間加重平均価格（Time-Weighted Average Price）— 操作に対して耐性のある時間加重平均。最近のオンチェーン観測から計算されます。AI システムで安全な価格参照として使用されます。"
+    },
+    "liquidity": {
+      "label": "流動性",
+      "tip": "現在の価格周辺のプールで利用可能な総流動性。値が高いほど、トレーダーのスリッページが少なく、流動性プロバイダーが得る手数料が多くなります。"
+    },
+    "volume24h": {
+      "label": "出来高 24時間",
+      "tip": "ETH/USDC 0.05% プールにおける過去 24 時間のトレーディング出来高。高い出来高はボールトに多くの手数料をもたらします。The Graph（Uniswap V3 サブグラフ）からのデータ。"
+    },
+    "volatility1d": {
+      "label": "ボラティリティ 1日",
+      "tip": "1日の実現ボラティリティ。実際の OHLC データの時間対数リターンから計算されます。AI はこの値を使用して理想的な流動性レンジ幅を決定します。"
+    },
+    "atr": {
+      "label": "ATR",
+      "tip": "平均真の値幅（Average True Range）— 平均価格変動によって市場のボラティリティを測定します。計算式：価格 × 1日ボラティリティ。AI がリバランスしきい値を調整するために使用します。"
+    },
+    "stdDev": {
+      "label": "標準偏差",
+      "tip": "価格リターンの標準偏差。高い値はより不安定な市場を示します。AI はこの値を使用してレンジ幅と戦略間（Core/Defensive/Opportunistic）の配分を調整します。"
+    },
+    "impermanentLoss": {
+      "label": "IL（インパーマネントロス）",
+      "tip": "単にトークンを保有した場合と比較した現在のポジションの推定インパーマネントロス。価格がエントリー価格から離れるときに発生する一時的な損失です。AI はリバランスを通じて IL の最小化を試みます。"
+    },
+    "maxDrawdown": {
+      "label": "最大ドローダウン",
+      "tip": "ボールト価値の歴史的ピークからの最大パーセンテージ下落。下方リスク指標。値が低いほど良い。"
+    },
+    "var95": {
+      "label": "VaR 95%",
+      "tip": "95% 信頼水準でのバリュー・アット・リスク — 通常の市場環境での最大予想損失（この値を超える確率は 5%）。現在のボラティリティに基づいて計算されます。"
+    },
+    "sharpe": {
+      "label": "シャープレシオ",
+      "tip": "リスク調整済みリターン。計算式：（リターン - 無リスク金利）/ 標準偏差。シャープ > 1 は良い、> 2 は優秀。リスク 1 単位当たりの追加リターンを測定します。"
+    },
+    "sortino": {
+      "label": "ソルティノレシオ",
+      "tip": "シャープと同様ですが、下方（ダウンサイド）ボラティリティのみにペナルティを課します。主に損失を懸念する投資家により適しています。ソルティノ > 1 は良い。"
+    },
+    "calmar": {
+      "label": "カルマーレシオ",
+      "tip": "年率リターンを最大ドローダウンで除したもの。最悪の歴史的シナリオに対するリターン効率を測定します。カルマー > 1 は良いとされます。"
+    }
+  },
+  "dataSource": {
+    "theGraph": "● The Graph",
+    "coinGecko": "⚠ CoinGecko",
+    "fallback": "✕ フォールバック",
+    "loading": "○ 読み込み中…"
+  },
+  "status": {
+    "live": "ライブ",
+    "paused": "一時停止",
+    "online": "オンライン",
+    "offline": "オフライン",
+    "synced": "同期済み",
+    "ready": "準備完了"
+  },
+  "actions": {
+    "refresh": "更新",
+    "approve": "USDC を承認",
+    "confirm": "確認",
+    "viewExplorer": "エクスプローラーで表示",
+    "adminPanel": "管理パネル"
+  },
+  "errors": {
+    "connectWallet": "まずウォレットを接続してください",
+    "insufficientBalance": "残高不足",
+    "transactionFailed": "トランザクション失敗"
+  }
+}

@@ -67,6 +67,9 @@ import { WalletConnect, ACTIVE_CHAIN_ID } from '@/components/wallet-connect';
 import { NetworkGuard } from '@/components/network-guard';
 import { TransactionHistory } from '@/components/transaction-history';
 import { MobileNav } from '@/components/mobile-nav';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { CardInfo } from '@/components/card-info';
+import { useI18n } from '@/contexts/i18n-context';
 
 // Derive network label and explorer from ACTIVE_CHAIN_ID (set via NEXT_PUBLIC_CHAIN_ID)
 const NETWORK_LABEL   = ACTIVE_CHAIN_ID === 421614 ? 'Arbitrum Sepolia' : 'Arbitrum One';
@@ -1230,6 +1233,7 @@ function PriceChart() {
 function DataLayer() {
   const { marketData, poolData, updateMarketData, isLoading, dataSource } = useLiquidityStore();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   useEffect(() => {
     const interval = setInterval(updateMarketData, 30000); // 30s — don't hammer The Graph
@@ -1242,14 +1246,14 @@ function DataLayer() {
   };
   
   const dataPoints = [
-    { label: 'Price', value: `$${marketData.price.toFixed(2)}`, icon: Coins },
-    { label: 'Tick', value: marketData.tick.toLocaleString(), icon: Target },
-    { label: 'TWAP', value: `$${marketData.twap.toFixed(2)}`, icon: TrendingUp },
-    { label: 'Liquidity', value: `$${(marketData.liquidity / 1e6).toFixed(1)}M`, icon: Droplets },
-    { label: 'Volume 24h', value: `$${(marketData.volume24h / 1e6).toFixed(1)}M`, icon: BarChart3 },
-    { label: 'Volatility 1D', value: `${(marketData.volatility1d * 100).toFixed(2)}%`, icon: Gauge },
-    { label: 'ATR', value: `$${marketData.atr.toFixed(2)}`, icon: Activity },
-    { label: 'Std Dev', value: `$${marketData.stdDeviation.toFixed(2)}`, icon: LineChart },
+    { label: t('metrics.price.label'),      tip: t('metrics.price.tip'),       value: `$${marketData.price.toFixed(2)}`,                     icon: Coins     },
+    { label: t('metrics.tick.label'),       tip: t('metrics.tick.tip'),        value: marketData.tick.toLocaleString(),                       icon: Target    },
+    { label: t('metrics.twap.label'),       tip: t('metrics.twap.tip'),        value: `$${marketData.twap.toFixed(2)}`,                       icon: TrendingUp},
+    { label: t('metrics.liquidity.label'),  tip: t('metrics.liquidity.tip'),   value: `$${(marketData.liquidity / 1e6).toFixed(1)}M`,          icon: Droplets  },
+    { label: t('metrics.volume24h.label'),  tip: t('metrics.volume24h.tip'),   value: `$${(marketData.volume24h / 1e6).toFixed(1)}M`,          icon: BarChart3 },
+    { label: t('metrics.volatility1d.label'),tip: t('metrics.volatility1d.tip'),value: `${(marketData.volatility1d * 100).toFixed(2)}%`,      icon: Gauge     },
+    { label: t('metrics.atr.label'),        tip: t('metrics.atr.tip'),         value: `$${marketData.atr.toFixed(2)}`,                        icon: Activity  },
+    { label: t('metrics.stdDev.label'),     tip: t('metrics.stdDev.tip'),      value: `$${marketData.stdDeviation.toFixed(2)}`,               icon: LineChart },
   ];
   
   return (
@@ -1298,9 +1302,12 @@ function DataLayer() {
             return (
               <motion.div
                 key={point.label}
-                className="p-3 rounded-lg bg-background/50 border border-border/50 text-center"
+                className="p-3 rounded-lg bg-background/50 border border-border/50 text-center relative"
                 whileHover={{ scale: 1.02 }}
               >
+                <div className="absolute top-2 right-2">
+                  <CardInfo tip={point.tip} />
+                </div>
                 <Icon className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">{point.label}</p>
                 <p className="text-sm font-bold">{point.value}</p>
@@ -1452,6 +1459,7 @@ export default function LiquidityManagerDashboard() {
                 </svg>
                 <span className="hidden sm:inline text-xs">Admin</span>
               </a>
+              <LanguageSwitcher />
               {/* Wallet — icon-only on mobile (text hidden internally in WalletConnect) */}
               <WalletConnect />
             </div>
