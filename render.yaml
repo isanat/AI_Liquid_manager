@@ -55,12 +55,9 @@ services:
       - key: NODE_VERSION
         value: 20
 
-      # ── AI engine URL (auto-linked from sibling service) ──
+      # ── AI engine URL ──
       - key: AI_ENGINE_URL
-        fromService:
-          name: ai-liquidity-engine
-          type: web
-          property: url
+        value: https://ai-liquidity-engine.onrender.com
 
       # ── The Graph API keys ──
       - key: THE_GRAPH_API_KEY
@@ -78,12 +75,9 @@ services:
       - key: NEXT_PUBLIC_WC_PROJECT_ID
         value: 9a9a4ec5bde3ebded3da0745fbb6cad3
 
-      # ── AI engine public URL (baked at build time — Render resolves fromService) ──
+      # ── AI engine public URL (baked at build time) ──
       - key: NEXT_PUBLIC_AI_ENGINE_URL
-        fromService:
-          name: ai-liquidity-engine
-          type: web
-          property: url
+        value: https://ai-liquidity-engine.onrender.com
 
       # ── RPC (public — pode usar Alchemy para produção) ──
       - key: NEXT_PUBLIC_RPC_ARBITRUM
@@ -97,10 +91,7 @@ services:
 
       # ── Frontend URL (shown in admin system page) ──
       - key: NEXT_PUBLIC_FRONTEND_URL
-        fromService:
-          name: ai-liquidity-frontend
-          type: web
-          property: url
+        value: https://ai-liquid-frontend.onrender.com
 
       # ── Database (SQLite via Prisma — set DATABASE_URL manually in Render dashboard) ──
       # Example: DATABASE_URL=file:/opt/render/project/src/prisma/prod.db
