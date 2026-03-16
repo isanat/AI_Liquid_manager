@@ -152,5 +152,32 @@
     "connectWallet": "Por favor conecta tu billetera primero",
     "insufficientBalance": "Saldo insuficiente",
     "transactionFailed": "Transacción fallida"
+  },
+  "aiStrategy": {
+    "card": "Modelo de IA impulsado por LightGBM que analiza datos de mercado en tiempo real para generar parámetros óptimos de rango de liquidez.",
+    "volatility1d": "Volatilidad realizada de 1 día alimentada al modelo LightGBM. Valores más altos amplían el rango recomendado para reducir la frecuencia de rebalanceo.",
+    "volatility7d": "Volatilidad realizada de 7 días. Proporciona una visión de horizonte más largo para detectar tendencias sostenidas y calibrar las recomendaciones de rango.",
+    "volumeScore": "Puntuación de volumen de trading normalizada (0–100%). Un volumen alto sugiere mayor potencial de ingresos por comisiones, lo que puede justificar rangos más estrechos y concentrados.",
+    "liquidityDepth": "Profundidad de liquidez del pool alrededor del precio actual. Poca profundidad significa mayor impacto de precio por operación, llevando al modelo hacia posicionamientos más conservadores.",
+    "rangeWidth": "Ancho porcentual (±) recomendado por la IA para la posición de liquidez. Más amplio en períodos de alta volatilidad, más estrecho cuando el mercado está tranquilo.",
+    "confidence": "Confianza del modelo LightGBM en la recomendación actual (0–100%). Mayor confianza significa mayor soporte histórico para los parámetros generados."
+  },
+  "rangeOptimizer": {
+    "card": "Distribuye capital entre tres rangos estratégicos — Core (comisiones concentradas), Defensivo (red de seguridad amplia) y Oportunista (ultra-estrecho para máximo rendimiento).",
+    "core": "Rango de liquidez principal (±6%). Mantiene ~60% del capital. Optimizado para máxima captura de comisiones durante el movimiento de precio diario normal.",
+    "defensive": "Rango de seguridad amplio (±20%). Actúa como buffer durante volatilidad extrema para garantizar que el vault continúe ganando comisiones incluso en oscilaciones bruscas.",
+    "opportunistic": "Rango ultra-estrecho (±2%) alrededor del precio actual. Maximiza el rendimiento de comisiones en períodos de baja volatilidad. Asignación pequeña para mantener costos de rebalanceo manejables."
+  },
+  "executionEngine": {
+    "card": "Gestiona posiciones Uniswap V3 on-chain — abre, rebalancea y recolecta comisiones automáticamente basándose en señales de IA.",
+    "activePositions": "Posiciones de liquidez Uniswap V3 actualmente abiertas. Punto verde = dentro del rango (generando comisiones activamente). Punto rojo = fuera del rango (precio se movió fuera de los límites).",
+    "recentExecutions": "Registro de acciones automatizadas recientes: operaciones de rebalanceo, recolecciones de comisiones y ajustes de posición ejecutados por el keeper bot.",
+    "collectFees": "Recolectar comisiones de trading acumuladas de esta posición Uniswap V3. Las comisiones recolectadas se agregan al vault y aumentan el precio de la share vAI.",
+    "openPosition": "Abrir una nueva posición de liquidez Uniswap V3 usando el rango óptimo calculado por la IA basado en la volatilidad y confianza actuales del mercado."
+  },
+  "vaultHistory": {
+    "card": "Registro on-chain de tus depósitos y retiros del vault ERC-4626, obtenido directamente de los eventos de la blockchain de Arbitrum.",
+    "vaiShares": "Shares del vault (vAI) emitidas al depositar USDC. A medida que el vault gana comisiones de trading, el precio de la share sube — el mismo número de shares vale más USDC con el tiempo.",
+    "blockNumber": "Número de bloque de Arbitrum cuando esta transacción fue confirmada on-chain. Haz clic en el icono de enlace externo para ver la transacción completa en el explorador de bloques."
   }
 }

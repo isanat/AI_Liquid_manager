@@ -152,5 +152,32 @@
     "connectWallet": "Conecte a carteira primeiro",
     "insufficientBalance": "Saldo insuficiente",
     "transactionFailed": "Transação falhou"
+  },
+  "aiStrategy": {
+    "card": "Modelo de IA baseado em LightGBM que analisa dados de mercado em tempo real para gerar parâmetros ótimos de range de liquidez.",
+    "volatility1d": "Volatilidade realizada de 1 dia alimentada no modelo LightGBM. Valores maiores alargam o range recomendado para reduzir a frequência de rebalanceamento.",
+    "volatility7d": "Volatilidade realizada de 7 dias. Fornece visão de horizonte mais longo para detetar tendências sustentadas e calibrar as recomendações de range.",
+    "volumeScore": "Pontuação de volume de trading normalizada (0–100%). Volume alto sugere maior potencial de taxas, o que pode justificar ranges mais estreitos e concentrados.",
+    "liquidityDepth": "Profundidade de liquidez do pool ao redor do preço atual. Pouca profundidade significa maior impacto de preço por trade, levando o modelo a posicionamentos mais conservadores.",
+    "rangeWidth": "Largura percentual (±) recomendada pela IA para a posição de liquidez. Mais largo em períodos de alta volatilidade, mais estreito quando o mercado está calmo.",
+    "confidence": "Confiança do modelo LightGBM na recomendação atual (0–100%). Maior confiança significa suporte histórico mais forte para os parâmetros gerados."
+  },
+  "rangeOptimizer": {
+    "card": "Distribui capital entre três ranges estratégicos — Core (taxas concentradas), Defensivo (rede de segurança ampla) e Oportunístico (ultra-estreito para rendimento máximo).",
+    "core": "Range de liquidez principal (±6%). Mantém ~60% do capital. Otimizado para máxima captura de taxas durante movimentação normal de preço.",
+    "defensive": "Range de segurança amplo (±20%). Atua como buffer durante volatilidade extrema para garantir que o vault continue a gerar taxas mesmo em oscilações bruscas.",
+    "opportunistic": "Range ultra-estreito (±2%) ao redor do preço atual. Maximiza o rendimento de taxas em períodos de baixa volatilidade. Alocação pequena para manter custos de rebalanceamento gerenciáveis."
+  },
+  "executionEngine": {
+    "card": "Gere posições Uniswap V3 on-chain — abre, rebalanceia e coleta taxas automaticamente com base nos sinais da IA.",
+    "activePositions": "Posições de liquidez Uniswap V3 atualmente abertas. Ponto verde = dentro do range (a gerar taxas). Ponto vermelho = fora do range (preço saiu dos limites da posição).",
+    "recentExecutions": "Log de ações automatizadas recentes: operações de rebalanceamento, coletas de taxas e ajustes de posição executados pelo keeper bot.",
+    "collectFees": "Coletar taxas de trading acumuladas desta posição Uniswap V3. As taxas coletadas são adicionadas ao vault e aumentam o preço da share vAI.",
+    "openPosition": "Abrir uma nova posição de liquidez Uniswap V3 usando o range ótimo calculado pela IA com base na volatilidade e confiança atuais do mercado."
+  },
+  "vaultHistory": {
+    "card": "Registo on-chain dos teus depósitos e saques do vault ERC-4626, obtido diretamente dos eventos da blockchain Arbitrum.",
+    "vaiShares": "Shares do vault (vAI) emitidas ao depositar USDC. À medida que o vault ganha taxas de trading, o preço da share sobe — o mesmo número de shares vale mais USDC ao longo do tempo.",
+    "blockNumber": "Número do bloco Arbitrum quando esta transação foi confirmada on-chain. Clica no ícone de link externo para ver a transação completa no explorador de blocos."
   }
 }

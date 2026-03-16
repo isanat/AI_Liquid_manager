@@ -800,14 +800,15 @@ function StrategyController() {
 // AI Strategy Engine Component
 function AIStrategyEngine() {
   const { aiInputs, aiOutputs, marketData } = useLiquidityStore();
-  
+  const { t } = useI18n();
+
   const inputBars = [
-    { label: 'Volatility 1D', value: aiInputs.volatility1d * 100, max: 10 },
-    { label: 'Volatility 7D', value: aiInputs.volatility7d * 100, max: 15 },
-    { label: 'Volume Score', value: (aiInputs.volume / 20000000) * 100, max: 100 },
-    { label: 'Liquidity Depth', value: (aiInputs.liquidityDepth / 30000000) * 100, max: 100 },
+    { label: 'Volatility 1D', tip: t('aiStrategy.volatility1d'), value: aiInputs.volatility1d * 100, max: 10 },
+    { label: 'Volatility 7D', tip: t('aiStrategy.volatility7d'), value: aiInputs.volatility7d * 100, max: 15 },
+    { label: 'Volume Score', tip: t('aiStrategy.volumeScore'), value: (aiInputs.volume / 20000000) * 100, max: 100 },
+    { label: 'Liquidity Depth', tip: t('aiStrategy.liquidityDepth'), value: (aiInputs.liquidityDepth / 30000000) * 100, max: 100 },
   ];
-  
+
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
       <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
@@ -817,7 +818,10 @@ function AIStrategyEngine() {
               <Brain className="h-5 w-5 text-cyan-400" />
             </div>
             <div>
-              <CardTitle className="text-lg">AI Strategy Engine</CardTitle>
+              <div className="flex items-center gap-1.5">
+                <CardTitle className="text-lg">AI Strategy Engine</CardTitle>
+                <CardInfo tip={t('aiStrategy.card')} />
+              </div>
               <CardDescription>Parameter generation</CardDescription>
             </div>
           </div>
@@ -833,7 +837,10 @@ function AIStrategyEngine() {
             {inputBars.map((bar) => (
               <div key={bar.label} className="space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">{bar.label}</span>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    {bar.label}
+                    <CardInfo tip={bar.tip} />
+                  </span>
                   <span>{bar.value.toFixed(1)}%</span>
                 </div>
                 <Progress value={bar.value} className="h-1.5" />
@@ -841,18 +848,24 @@ function AIStrategyEngine() {
             ))}
           </div>
         </div>
-        
+
         <Separator className="bg-border/50" />
-        
+
         <div>
           <p className="text-xs text-muted-foreground mb-3">Model Outputs</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-lg bg-background/50 border border-border/50">
-              <p className="text-xs text-muted-foreground">Range Width</p>
+              <div className="flex items-center gap-1 mb-0.5">
+                <p className="text-xs text-muted-foreground">Range Width</p>
+                <CardInfo tip={t('aiStrategy.rangeWidth')} />
+              </div>
               <p className="text-lg font-bold text-cyan-400">±{aiOutputs.rangeWidth.toFixed(1)}%</p>
             </div>
             <div className="p-3 rounded-lg bg-background/50 border border-border/50">
-              <p className="text-xs text-muted-foreground">Confidence</p>
+              <div className="flex items-center gap-1 mb-0.5">
+                <p className="text-xs text-muted-foreground">Confidence</p>
+                <CardInfo tip={t('aiStrategy.confidence')} />
+              </div>
               <p className="text-lg font-bold text-emerald-400">
                 {(aiOutputs.confidence * 100).toFixed(0)}%
               </p>
@@ -891,20 +904,27 @@ function AIStrategyEngine() {
 // Range Optimizer Component
 function RangeOptimizer() {
   const { ranges, marketData, aiOutputs } = useLiquidityStore();
+  const { t } = useI18n();
   const price = marketData.price;
-  
+
   const rangeColors = {
     core: '#10b981',
     defensive: '#f59e0b',
     opportunistic: '#8b5cf6',
   };
-  
+
+  const rangeTips: Record<string, string> = {
+    core: t('rangeOptimizer.core'),
+    defensive: t('rangeOptimizer.defensive'),
+    opportunistic: t('rangeOptimizer.opportunistic'),
+  };
+
   const pieData = ranges.map(r => ({
     name: r.type.charAt(0).toUpperCase() + r.type.slice(1),
     value: r.percentage,
     fill: rangeColors[r.type],
   }));
-  
+
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
       <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
@@ -914,7 +934,10 @@ function RangeOptimizer() {
               <Target className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
-              <CardTitle className="text-lg">Range Optimizer</CardTitle>
+              <div className="flex items-center gap-1.5">
+                <CardTitle className="text-lg">Range Optimizer</CardTitle>
+                <CardInfo tip={t('rangeOptimizer.card')} />
+              </div>
               <CardDescription>Tick calculation & allocation</CardDescription>
             </div>
           </div>
@@ -959,15 +982,18 @@ function RangeOptimizer() {
         
         <div className="space-y-3">
           {ranges.map((range) => (
-            <div 
+            <div
               key={range.type}
               className="p-3 rounded-lg bg-background/50 border border-border/50"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium capitalize">{range.type} Range</span>
-                <Badge 
-                  variant="outline" 
-                  style={{ 
+                <span className="flex items-center gap-1 text-sm font-medium capitalize">
+                  {range.type} Range
+                  <CardInfo tip={rangeTips[range.type]} />
+                </span>
+                <Badge
+                  variant="outline"
+                  style={{
                     borderColor: rangeColors[range.type] + '40',
                     color: rangeColors[range.type]
                   }}
@@ -1001,6 +1027,7 @@ function RangeOptimizer() {
 function ExecutionEngine() {
   const { positions, recentExecutions, collectFees, marketData, aiOutputs } = useLiquidityStore();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [openPositionModal, setOpenPositionModal] = useState(false);
   const [collectingId, setCollectingId] = useState<string | null>(null);
 
@@ -1030,7 +1057,10 @@ function ExecutionEngine() {
               <Zap className="h-5 w-5 text-rose-400" />
             </div>
             <div>
-              <CardTitle className="text-lg">Execution Engine</CardTitle>
+              <div className="flex items-center gap-1.5">
+                <CardTitle className="text-lg">Execution Engine</CardTitle>
+                <CardInfo tip={t('executionEngine.card')} />
+              </div>
               <CardDescription>Position management & transactions</CardDescription>
             </div>
           </div>
@@ -1038,7 +1068,10 @@ function ExecutionEngine() {
       </CardHeader>
       <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">Active Positions</p>
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            Active Positions
+            <CardInfo tip={t('executionEngine.activePositions')} />
+          </p>
           <ScrollArea className="h-44">
             {positions.map((pos) => (
               <div
@@ -1062,6 +1095,7 @@ function ExecutionEngine() {
                     <p className="text-xs text-emerald-400">+{pos.feesEarned0.toFixed(4)} ETH</p>
                     <p className="text-xs text-emerald-400">+{pos.feesEarned1.toFixed(2)} USDC</p>
                   </div>
+                  <CardInfo tip={t('executionEngine.collectFees')} />
                   <Button
                     size="sm"
                     variant="ghost"
@@ -1080,7 +1114,10 @@ function ExecutionEngine() {
         <Separator className="bg-border/50" />
         
         <div>
-          <p className="text-xs text-muted-foreground mb-2">Recent Executions</p>
+          <p className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+            Recent Executions
+            <CardInfo tip={t('executionEngine.recentExecutions')} />
+          </p>
           <div className="space-y-1">
             {recentExecutions.length > 0 ? (
               recentExecutions.slice(0, 3).map((exec) => (
@@ -1110,14 +1147,17 @@ function ExecutionEngine() {
         {/* On-chain positions via wallet */}
         <UniswapPositions />
 
-        <Button
-          size="sm"
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
-          onClick={() => setOpenPositionModal(true)}
-        >
-          <Zap className="h-3 w-3 mr-1" />
-          Open New Position (AI Range)
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+            onClick={() => setOpenPositionModal(true)}
+          >
+            <Zap className="h-3 w-3 mr-1" />
+            Open New Position (AI Range)
+          </Button>
+          <CardInfo tip={t('executionEngine.openPosition')} />
+        </div>
 
         <OpenPositionModal
           open={openPositionModal}

@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowDownLeft, ArrowUpRight, Clock, ExternalLink, RefreshCw } from 'lucide-react';
 import { ACTIVE_CHAIN_ID } from '@/components/wallet-connect';
+import { CardInfo } from '@/components/card-info';
+import { useI18n } from '@/contexts/i18n-context';
 
 const EXPLORER = ACTIVE_CHAIN_ID === 421614
   ? 'https://sepolia.arbiscan.io'
@@ -15,6 +17,7 @@ const EXPLORER = ACTIVE_CHAIN_ID === 421614
 export function TransactionHistory() {
   const { isConnected } = useAccount();
   const { history, loading, error, refresh } = useVaultHistory();
+  const { t } = useI18n();
 
   if (!isConnected) return null;
 
@@ -26,7 +29,10 @@ export function TransactionHistory() {
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-500/5">
               <Clock className="h-4 w-4 text-cyan-400" />
             </div>
-            <CardTitle className="text-base">My Vault History</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-base">My Vault History</CardTitle>
+              <CardInfo tip={t('vaultHistory.card')} />
+            </div>
           </div>
           <Button
             variant="ghost"
@@ -81,8 +87,16 @@ export function TransactionHistory() {
                       {tx.type === 'deposit' ? '+' : '-'}
                       {parseFloat(tx.assetsFormatted).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
                     </p>
-                    <p className="text-[10px] text-zinc-500 mt-0.5">
-                      {parseFloat(tx.sharesFormatted).toFixed(4)} vAI shares · block {tx.blockNumber.toString()}
+                    <p className="flex items-center gap-1 text-[10px] text-zinc-500 mt-0.5">
+                      <span className="flex items-center gap-0.5">
+                        {parseFloat(tx.sharesFormatted).toFixed(4)} vAI shares
+                        <CardInfo tip={t('vaultHistory.vaiShares')} />
+                      </span>
+                      <span>·</span>
+                      <span className="flex items-center gap-0.5">
+                        block {tx.blockNumber.toString()}
+                        <CardInfo tip={t('vaultHistory.blockNumber')} />
+                      </span>
                     </p>
                   </div>
                 </div>
