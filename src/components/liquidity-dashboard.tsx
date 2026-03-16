@@ -315,6 +315,7 @@ function VaultManager() {
   const { address, isConnected, chainId } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
+  const { t } = useI18n();
 
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawShares, setWithdrawShares] = useState('');
@@ -443,7 +444,10 @@ function VaultManager() {
               <Shield className="h-5 w-5 text-amber-400" />
             </div>
             <div>
-              <CardTitle className="text-lg">Vault Manager</CardTitle>
+              <div className="flex items-center gap-1.5">
+                <CardTitle className="text-lg">Vault Manager</CardTitle>
+                <CardInfo tip={t('vaultManager.card')} />
+              </div>
               <CardDescription>
                 ERC-4626 · {NETWORK_LABEL}
                 {VAULT_ADDRESS && (
@@ -467,13 +471,19 @@ function VaultManager() {
         {/* On-chain stats */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Total Assets (on-chain)</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              Total Assets (on-chain)
+              <CardInfo tip={t('vaultManager.totalAssets')} />
+            </p>
             <p className="text-xl font-bold">
               <AnimatedNumber value={totalAssetsUsd} prefix="$" decimals={0} />
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">vAI Share Price</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              vAI Share Price
+              <CardInfo tip={t('vaultManager.sharePrice')} />
+            </p>
             <p className="text-xl font-bold">
               <AnimatedNumber value={sharePriceUsd} prefix="$" decimals={4} />
             </p>
@@ -481,13 +491,19 @@ function VaultManager() {
           {isConnected && (
             <>
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Your Position</p>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  Your Position
+                  <CardInfo tip={t('vaultManager.yourPosition')} />
+                </p>
                 <p className="text-xl font-bold">
                   <AnimatedNumber value={userAssetsUsd} prefix="$" decimals={2} />
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Wallet USDC</p>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  Wallet USDC
+                  <CardInfo tip={t('vaultManager.walletUsdc')} />
+                </p>
                 <p className="text-xl font-bold">
                   <AnimatedNumber value={userUsdcBal} prefix="$" decimals={2} />
                 </p>
@@ -514,7 +530,10 @@ function VaultManager() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Deposit USDC</p>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  Deposit USDC
+                  <CardInfo tip={t('vaultManager.deposit')} />
+                </p>
                 <input
                   type="number"
                   placeholder="Amount (USDC)"
@@ -533,7 +552,10 @@ function VaultManager() {
                 </Button>
               </div>
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Redeem vAI Shares</p>
+                <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                  Redeem vAI Shares
+                  <CardInfo tip={t('vaultManager.withdraw')} />
+                </p>
                 <input
                   type="number"
                   placeholder="vAI shares"
@@ -570,8 +592,9 @@ function VaultManager() {
         )}
 
         {vaultState && (
-          <div className="text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
             Mgmt fee: {Number(vaultState.managementFeeBps) / 100}% · Perf fee: {Number(vaultState.performanceFeeBps) / 100}%
+            <CardInfo tip={t('vaultManager.fees')} />
           </div>
         )}
       </CardContent>
@@ -583,6 +606,7 @@ function VaultManager() {
 function StrategyController() {
   const { currentCycle, startCycle, executeRebalance, updateMarketData, setAiOutputs, systemStatus } = useLiquidityStore();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [cyclePhase, setCyclePhase] = useState(0);
   const [keeperStatus, setKeeperStatus] = useState<{ last_run?: string; next_run_in_seconds?: number; status?: string } | null>(null);
   const [isTriggering, setIsTriggering] = useState(false);
@@ -692,7 +716,10 @@ function StrategyController() {
               <Layers className="h-5 w-5 text-violet-400" />
             </div>
             <div>
-              <CardTitle className="text-lg">Strategy Controller</CardTitle>
+              <div className="flex items-center gap-1.5">
+                <CardTitle className="text-lg">Strategy Controller</CardTitle>
+                <CardInfo tip={t('strategyController.card')} />
+              </div>
               <CardDescription>Orchestration engine</CardDescription>
             </div>
           </div>
@@ -761,18 +788,24 @@ function StrategyController() {
         
         <div className="grid grid-cols-2 gap-2">
           <div className="text-xs">
-            <p className="text-muted-foreground">Cycle Interval</p>
+            <p className="flex items-center gap-1 text-muted-foreground">
+              Cycle Interval
+              <CardInfo tip={t('strategyController.cycleInterval')} />
+            </p>
             <p className="font-medium">
               {keeperStatus ? `${Math.round(((keeperStatus as { interval_seconds?: number }).interval_seconds ?? 900) / 60)} min` : '15 min'}
             </p>
           </div>
           <div className="text-xs">
-            <p className="text-muted-foreground">Next Run</p>
+            <p className="flex items-center gap-1 text-muted-foreground">
+              Next Run
+              <CardInfo tip={t('strategyController.nextRun')} />
+            </p>
             <p className="font-medium">{nextRunLabel}</p>
           </div>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Button
             size="sm"
             className="flex-1 bg-violet-600 hover:bg-violet-700"
@@ -782,6 +815,7 @@ function StrategyController() {
             <Play className="h-4 w-4 mr-1" />
             {currentCycle ? 'Running…' : 'Run Cycle'}
           </Button>
+          <CardInfo tip={t('strategyController.runCycle')} />
           <Button
             size="sm"
             variant="outline"
@@ -791,6 +825,7 @@ function StrategyController() {
           >
             {isTriggering ? 'Triggering…' : 'Rebalance'}
           </Button>
+          <CardInfo tip={t('strategyController.rebalance')} />
         </div>
       </CardContent>
     </Card>
@@ -1174,7 +1209,8 @@ function ExecutionEngine() {
 // Risk Dashboard Component
 function RiskDashboard() {
   const { riskMetrics, regime } = useLiquidityStore();
-  
+  const { t } = useI18n();
+
   const regimeColors = {
     'trend': 'text-emerald-400',
     'range': 'text-amber-400',
@@ -1191,7 +1227,10 @@ function RiskDashboard() {
               <AlertTriangle className="h-5 w-5 text-rose-400" />
             </div>
             <div>
-              <CardTitle className="text-lg">Risk Dashboard</CardTitle>
+              <div className="flex items-center gap-1.5">
+                <CardTitle className="text-lg">Risk Dashboard</CardTitle>
+                <CardInfo tip={t('riskDashboard.card')} />
+              </div>
               <CardDescription>IL, metrics & regime detection</CardDescription>
             </div>
           </div>
@@ -1200,8 +1239,11 @@ function RiskDashboard() {
       <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
         <div className="p-3 rounded-lg bg-background/50 border border-border/50">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-muted-foreground">Market Regime</span>
-            <Badge 
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              Market Regime
+              <CardInfo tip={t('riskDashboard.marketRegime')} />
+            </span>
+            <Badge
               variant="outline"
               className={cn("capitalize", regimeColors[regime.type])}
             >
@@ -1210,15 +1252,21 @@ function RiskDashboard() {
           </div>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
-              <p className="text-muted-foreground">Trend</p>
+              <p className="flex items-center gap-0.5 text-muted-foreground">
+                Trend <CardInfo tip={t('riskDashboard.trend')} />
+              </p>
               <p className="font-medium">{(regime.indicators.trendStrength * 100).toFixed(0)}%</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Vol</p>
+              <p className="flex items-center gap-0.5 text-muted-foreground">
+                Vol <CardInfo tip={t('riskDashboard.vol')} />
+              </p>
               <p className="font-medium">{(regime.indicators.volatilityLevel * 100).toFixed(0)}%</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Volume</p>
+              <p className="flex items-center gap-0.5 text-muted-foreground">
+                Volume <CardInfo tip={t('riskDashboard.volume')} />
+              </p>
               <p className="font-medium">{(regime.indicators.volumeProfile * 100).toFixed(0)}%</p>
             </div>
           </div>
@@ -1226,25 +1274,33 @@ function RiskDashboard() {
         
         <div className="grid grid-cols-2 gap-3">
           <div className="p-3 rounded-lg bg-background/50 border border-border/50">
-            <p className="text-xs text-muted-foreground">Impermanent Loss</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              Impermanent Loss <CardInfo tip={t('metrics.impermanentLoss.tip')} />
+            </p>
             <p className="text-lg font-bold text-rose-400">
               {(riskMetrics.impermanentLoss * 100).toFixed(2)}%
             </p>
           </div>
           <div className="p-3 rounded-lg bg-background/50 border border-border/50">
-            <p className="text-xs text-muted-foreground">Max Drawdown</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              Max Drawdown <CardInfo tip={t('metrics.maxDrawdown.tip')} />
+            </p>
             <p className="text-lg font-bold text-amber-400">
               {(riskMetrics.maxDrawdown * 100).toFixed(1)}%
             </p>
           </div>
           <div className="p-3 rounded-lg bg-background/50 border border-border/50">
-            <p className="text-xs text-muted-foreground">Sharpe Ratio</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              Sharpe Ratio <CardInfo tip={t('metrics.sharpe.tip')} />
+            </p>
             <p className="text-lg font-bold text-emerald-400">
               {riskMetrics.sharpeRatio.toFixed(2)}
             </p>
           </div>
           <div className="p-3 rounded-lg bg-background/50 border border-border/50">
-            <p className="text-xs text-muted-foreground">VaR 95%</p>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              VaR 95% <CardInfo tip={t('metrics.var95.tip')} />
+            </p>
             <p className="text-lg font-bold text-cyan-400">
               {(riskMetrics.var95 * 100).toFixed(1)}%
             </p>
@@ -1253,7 +1309,10 @@ function RiskDashboard() {
         
         <div className="space-y-2">
           <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Rebalance Score</span>
+            <span className="flex items-center gap-1 text-muted-foreground">
+              Rebalance Score
+              <CardInfo tip={t('riskDashboard.rebalanceScore')} />
+            </span>
             <span>0.42 / 0.65 threshold</span>
           </div>
           <Progress value={65} className="h-2" />

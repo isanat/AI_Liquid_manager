@@ -179,5 +179,30 @@
     "card": "On-chain record of your deposits and withdrawals from the ERC-4626 vault, fetched directly from Arbitrum blockchain events.",
     "vaiShares": "Vault shares (vAI) issued when depositing USDC. As the vault earns trading fees, the share price increases — the same number of shares becomes worth more USDC over time.",
     "blockNumber": "Arbitrum block number when this transaction was confirmed on-chain. Click the external link icon to view the full transaction on the block explorer."
+  },
+  "vaultManager": {
+    "card": "ERC-4626 tokenized vault on Arbitrum. Deposits are converted to vAI shares. The vault automatically provides liquidity on Uniswap V3, generating trading fees that increase the share price.",
+    "totalAssets": "Total USDC value locked in the vault on-chain, including all active Uniswap V3 liquidity positions and any idle USDC buffer.",
+    "sharePrice": "Current price of one vAI share in USDC. Starts at $1.00 and increases as the vault earns trading fees. Your profit = (current price - entry price) × shares held.",
+    "yourPosition": "Your current position value in USDC, calculated as your vAI shares × current share price.",
+    "walletUsdc": "Your USDC balance in the connected wallet, available to deposit into the vault.",
+    "deposit": "Deposit USDC to receive vAI shares. Requires two wallet confirmations: first approve USDC spending, then confirm the deposit transaction.",
+    "withdraw": "Redeem (burn) your vAI shares to receive back USDC at the current share price. No lock-up period.",
+    "fees": "Management fee: charged annually on total assets. Performance fee: charged on profits above the high-water mark. Both fees accrue to the protocol treasury."
+  },
+  "strategyController": {
+    "card": "Orchestrates the full automation cycle: data collection → AI inference → range optimization → on-chain execution. Runs automatically every 15 minutes via keeper bot.",
+    "cycleInterval": "How often the keeper bot automatically runs a full strategy cycle — fetching market data, running AI inference, and executing rebalances if needed.",
+    "nextRun": "Estimated time until the keeper bot starts the next automated strategy cycle.",
+    "runCycle": "Manually trigger a strategy cycle: fetches live market data from The Graph, runs LightGBM inference, and updates range parameters in real time.",
+    "rebalance": "Send an immediate rebalance signal to the keeper bot to execute on-chain position adjustments using the latest AI-calculated parameters."
+  },
+  "riskDashboard": {
+    "card": "Monitors risk metrics and market regime — impermanent loss, drawdown, Sharpe ratio, VaR, and the rebalancing threshold score.",
+    "marketRegime": "Current market regime detected by the AI. Determines strategy posture: Trend (follow momentum), Range (mean-reversion fees), High-Vol (widen positions), Low-Vol (concentrate for yield).",
+    "trend": "Trend strength indicator (0–100%). High values indicate strong directional momentum, favoring wider ranges and directional positioning.",
+    "vol": "Current volatility level relative to historical average. High values trigger wider liquidity ranges and more defensive capital allocation.",
+    "volume": "Current trading volume relative to historical average. High volume indicates an active market with higher fee generation potential.",
+    "rebalanceScore": "Composite score measuring how far the current position is from optimal. When it exceeds the threshold (default 0.65), the keeper bot triggers an automatic rebalance."
   }
 }

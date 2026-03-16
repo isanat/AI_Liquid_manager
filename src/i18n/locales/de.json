@@ -179,5 +179,30 @@
     "card": "On-Chain-Aufzeichnung deiner Ein- und Auszahlungen aus dem ERC-4626 Vault, direkt aus Arbitrum-Blockchain-Ereignissen abgerufen.",
     "vaiShares": "Vault-Anteile (vAI), die bei USDC-Einzahlungen ausgegeben werden. Da der Vault Handelsgebühren verdient, steigt der Anteilspreis — dieselbe Anzahl Anteile ist mit der Zeit mehr USDC wert.",
     "blockNumber": "Arbitrum-Blocknummer, als diese Transaktion On-Chain bestätigt wurde. Klicke auf das externe Link-Symbol, um die vollständige Transaktion im Block-Explorer anzuzeigen."
+  },
+  "vaultManager": {
+    "card": "ERC-4626 tokenisierter Vault auf Arbitrum. Einzahlungen werden in vAI-Anteile umgewandelt. Der Vault stellt automatisch Liquidität auf Uniswap V3 bereit und generiert Handelsgebühren, die den Anteilspreis erhöhen.",
+    "totalAssets": "Gesamter USDC-Wert im Vault On-Chain, einschließlich aller aktiven Uniswap V3 Liquiditätspositionen und etwaiger inaktiver USDC-Puffer.",
+    "sharePrice": "Aktueller Preis eines vAI-Anteils in USDC. Beginnt bei $1,00 und steigt mit den verdienten Gebühren. Dein Gewinn = (aktueller Preis - Einstiegspreis) × gehaltene Anteile.",
+    "yourPosition": "Dein aktueller Positionswert in USDC, berechnet als: deine vAI-Anteile × aktueller Anteilspreis.",
+    "walletUsdc": "Dein USDC-Guthaben in der verbundenen Wallet, verfügbar für Einzahlungen in den Vault.",
+    "deposit": "USDC einzahlen, um vAI-Anteile zu erhalten. Erfordert zwei Wallet-Bestätigungen: zunächst USDC-Ausgabe genehmigen, dann Einzahlung bestätigen.",
+    "withdraw": "Deine vAI-Anteile einlösen (verbrennen), um USDC zum aktuellen Anteilspreis zurückzuerhalten. Kein Sperrfristen.",
+    "fees": "Verwaltungsgebühr: jährlich auf das Gesamtvermögen berechnet. Performance-Gebühr: auf Gewinne über der High-Water-Mark berechnet. Beide gehen an den Protokoll-Treasury."
+  },
+  "strategyController": {
+    "card": "Orchestriert den vollständigen Automatisierungszyklus: Datenerfassung → KI-Inferenz → Bereichsoptimierung → On-Chain-Ausführung. Läuft automatisch alle 15 Minuten über den Keeper-Bot.",
+    "cycleInterval": "Wie oft der Keeper-Bot automatisch einen vollständigen Strategiezyklus ausführt — Marktdaten abrufen, KI-Inferenz und Rebalancing falls nötig.",
+    "nextRun": "Geschätzte Zeit bis der Keeper-Bot den nächsten automatisierten Strategiezyklus startet.",
+    "runCycle": "Manuell einen Strategiezyklus auslösen: ruft Live-Marktdaten von The Graph ab, führt LightGBM-Inferenz durch und aktualisiert Bereichsparameter in Echtzeit.",
+    "rebalance": "Sofortiges Rebalancing-Signal an den Keeper-Bot senden, um On-Chain-Positionsanpassungen mit den neuesten KI-berechneten Parametern durchzuführen."
+  },
+  "riskDashboard": {
+    "card": "Überwacht Risikokennzahlen und Marktregime — Impermanenter Verlust, Drawdown, Sharpe-Ratio, VaR und Rebalancing-Score.",
+    "marketRegime": "Aktuelles von der KI erkanntes Marktregime. Bestimmt die strategische Haltung: Trend (Momentum folgen), Range (Mean-Reversion-Gebühren), High-Vol (Positionen erweitern), Low-Vol (für Rendite konzentrieren).",
+    "trend": "Trendstärke-Indikator (0–100%). Hohe Werte zeigen starkes direktionales Momentum, begünstigend breitere Bereiche und direktionales Positioning.",
+    "vol": "Aktuelles Volatilitätsniveau relativ zum historischen Durchschnitt. Hohe Werte lösen breitere Liquiditätsbereiche und defensivere Kapitalallokation aus.",
+    "volume": "Aktuelles Handelsvolumen relativ zum historischen Durchschnitt. Hohes Volumen zeigt einen aktiven Markt mit höherem Gebührenpotenzial.",
+    "rebalanceScore": "Zusammengesetzter Score, der misst, wie weit die aktuelle Position vom Optimum entfernt ist. Überschreitet er den Schwellenwert (Standard 0,65), löst der Keeper-Bot ein automatisches Rebalancing aus."
   }
 }
