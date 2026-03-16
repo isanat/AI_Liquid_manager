@@ -6,7 +6,7 @@ import { formatUnits, parseUnits } from 'viem';
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Brain, ChevronRight,
   Droplets, ExternalLink, Home, LineChart, RefreshCw,
-  Settings, Shield, Target, TrendingUp, Wallet, Zap,
+  Settings, Shield, Target, TrendingUp, Wallet, Zap, Clock, Coins,
 } from 'lucide-react';
 import { WalletConnect, ACTIVE_CHAIN_ID } from '@/components/wallet-connect';
 import { CardInfo } from '@/components/card-info';
@@ -81,6 +81,34 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-6">
+
+      {/* ── Onboarding card (only when not connected) ─── */}
+      {!isConnected && (
+        <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/50 to-cyan-950/30 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500">
+              <Droplets className="h-3.5 w-3.5 text-white" />
+            </div>
+            <span className="font-bold text-sm">Como funciona?</span>
+          </div>
+          <div className="flex flex-col gap-2 mb-3">
+            {[
+              { icon: Wallet, color: 'text-emerald-400', text: 'Deposite USDC no vault' },
+              { icon: Brain,  color: 'text-cyan-400',    text: 'IA rebalanceia a cada 15 min na Uniswap V3' },
+              { icon: TrendingUp, color: 'text-violet-400', text: 'Retire USDC + rendimento a qualquer hora' },
+            ].map(({ icon: Icon, color, text }) => (
+              <div key={text} className="flex items-center gap-2 text-xs text-zinc-300">
+                <Icon className={cn('h-3.5 w-3.5 shrink-0', color)} />
+                {text}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2 text-[10px] text-zinc-500">
+            <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-emerald-400" /> Sem lock-up</span>
+            <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-amber-400" /> ERC-4626</span>
+          </div>
+        </div>
+      )}
 
       {/* Hero — My Position */}
       <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 to-cyan-500/10 border border-emerald-500/20 p-5">

@@ -144,7 +144,7 @@ def clamp_tick(tick: int) -> int:
 async def run_keeper_cycle(w3: AsyncWeb3, vault, keeper_account: str) -> dict:
     """Execute one full keeper cycle: predict → rebalance → collectFees."""
 
-    ai_url   = os.getenv("AI_ENGINE_URL", "http://localhost:8000")
+    ai_url   = os.getenv("AI_ENGINE_URL", f"http://localhost:{os.getenv('PORT', '8000')}")
     usdc_pct = float(os.getenv("USDC_DEPLOY_PCT", "80")) / 100.0
 
     result = {"success": False, "action": None, "tx_hash": None, "error": None}
