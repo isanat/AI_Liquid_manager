@@ -179,5 +179,30 @@
     "card": "Registo on-chain dos teus depósitos e saques do vault ERC-4626, obtido diretamente dos eventos da blockchain Arbitrum.",
     "vaiShares": "Shares do vault (vAI) emitidas ao depositar USDC. À medida que o vault ganha taxas de trading, o preço da share sobe — o mesmo número de shares vale mais USDC ao longo do tempo.",
     "blockNumber": "Número do bloco Arbitrum quando esta transação foi confirmada on-chain. Clica no ícone de link externo para ver a transação completa no explorador de blocos."
+  },
+  "vaultManager": {
+    "card": "Vault ERC-4626 tokenizado no Arbitrum. Os depósitos são convertidos em shares vAI. O vault fornece liquidez automaticamente na Uniswap V3, gerando taxas de trading que aumentam o preço da share.",
+    "totalAssets": "Valor total em USDC bloqueado no vault on-chain, incluindo todas as posições de liquidez Uniswap V3 ativas e qualquer buffer de USDC inativo.",
+    "sharePrice": "Preço atual de uma share vAI em USDC. Começa a $1,00 e sobe à medida que o vault ganha taxas. Teu lucro = (preço atual - preço de entrada) × shares detidas.",
+    "yourPosition": "Valor atual da tua posição em USDC, calculado como: tuas shares vAI × preço atual da share.",
+    "walletUsdc": "Teu saldo de USDC na carteira conectada, disponível para depositar no vault.",
+    "deposit": "Deposita USDC para receber shares vAI. Requer duas confirmações na carteira: primeiro aprovar o gasto de USDC, depois confirmar o depósito.",
+    "withdraw": "Resgata (queima) as tuas shares vAI para receber USDC ao preço atual da share. Sem período de bloqueio.",
+    "fees": "Taxa de gestão: cobrada anualmente sobre os ativos totais. Taxa de performance: cobrada sobre os lucros acima do high-water mark. Ambas vão para o tesouro do protocolo."
+  },
+  "strategyController": {
+    "card": "Orquestra o ciclo completo de automação: recolha de dados → inferência da IA → otimização de range → execução on-chain. Corre automaticamente a cada 15 minutos via keeper bot.",
+    "cycleInterval": "Com que frequência o keeper bot corre automaticamente um ciclo completo de estratégia — recolhendo dados de mercado, inferência da IA e rebalanceamentos se necessário.",
+    "nextRun": "Tempo estimado até o keeper bot iniciar o próximo ciclo automático de estratégia.",
+    "runCycle": "Aciona manualmente um ciclo de estratégia: obtém dados de mercado em tempo real do The Graph, corre inferência LightGBM e atualiza os parâmetros de range.",
+    "rebalance": "Envia sinal imediato de rebalanceamento para o keeper bot executar ajustes de posição on-chain com os últimos parâmetros calculados pela IA."
+  },
+  "riskDashboard": {
+    "card": "Monitoriza métricas de risco e regime de mercado — perda impermanente, drawdown, Sharpe ratio, VaR e pontuação de rebalanceamento.",
+    "marketRegime": "Regime de mercado atual detetado pela IA. Determina a postura estratégica: Trend (seguir momentum), Range (taxas de mean-reversion), High-Vol (alargar posições), Low-Vol (concentrar para rendimento).",
+    "trend": "Indicador de força de tendência (0–100%). Valores altos indicam momentum direcional forte, favorecendo ranges mais largos e posicionamento direcional.",
+    "vol": "Nível de volatilidade atual em relação à média histórica. Valores altos acionam ranges de liquidez mais largos e alocação de capital mais defensiva.",
+    "volume": "Volume de trading atual em relação à média histórica. Volume alto indica mercado ativo com maior potencial de geração de taxas.",
+    "rebalanceScore": "Pontuação composta que mede o quão longe a posição atual está do ótimo. Quando excede o threshold (padrão 0,65), o keeper bot aciona um rebalanceamento automático."
   }
 }
