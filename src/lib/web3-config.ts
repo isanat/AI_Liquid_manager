@@ -11,7 +11,7 @@ import { injected, coinbaseWallet, walletConnect } from 'wagmi/connectors';
 const WC_PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID ?? 'demo-project-id';
 
 const FRONTEND_URL =
-  process.env.NEXT_PUBLIC_FRONTEND_URL ?? 'https://ai-liquidity-frontend.onrender.com';
+  process.env.NEXT_PUBLIC_FRONTEND_URL ?? 'https://ai-liquid-frontend.onrender.com';
 
 export const wagmiConfig = createConfig({
   // Arbitrum One first = default chain for the app
