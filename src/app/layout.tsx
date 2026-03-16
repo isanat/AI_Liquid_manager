@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Web3Provider } from "@/components/web3-provider";
+import { I18nProvider } from "@/contexts/i18n-context";
 
 // GeistSans and GeistMono from the 'geist' npm package — no network fetch at build time
 
@@ -46,9 +47,11 @@ export default function RootLayout({
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased bg-background text-foreground`}
       >
-        <Web3Provider>
-          {children}
-        </Web3Provider>
+        <I18nProvider>
+          <Web3Provider>
+            {children}
+          </Web3Provider>
+        </I18nProvider>
         <Toaster />
       </body>
     </html>

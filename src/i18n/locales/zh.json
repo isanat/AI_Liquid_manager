@@ -1,0 +1,156 @@
+{
+  "tabs": {
+    "portfolio": "投资组合",
+    "invest": "投资",
+    "market": "市场",
+    "system": "系统"
+  },
+  "nav": {
+    "connectWallet": "连接钱包",
+    "admin": "管理员",
+    "language": "语言"
+  },
+  "portfolio": {
+    "myPosition": "我的仓位",
+    "noPosition": "无活跃仓位",
+    "connectWallet": "请连接钱包",
+    "vaiShares": "vAI 份额",
+    "deposit": "存入",
+    "withdraw": "提取",
+    "recentTransactions": "最近交易",
+    "noTransactions": "暂无交易记录",
+    "marketSummary": "市场摘要",
+    "tip": "显示您在 ERC-4626 金库中的当前仓位价值。计算方式：您的份额 × 份额价格。随着金库产生手续费，份额价格会不断上涨。"
+  },
+  "invest": {
+    "depositMode": "存入",
+    "withdrawMode": "提取",
+    "depositLabel": "USDC 金额",
+    "withdrawLabel": "vAI 份额",
+    "maxButton": "最大值",
+    "confirmDeposit": "确认存入",
+    "confirmWithdraw": "确认提取",
+    "fullHistory": "完整历史",
+    "tip": "存入 USDC 以获得 vAI 份额。金库将资金用于在 Uniswap V3 上提供流动性，产生交易手续费，按比例分配给投资者。"
+  },
+  "market": {
+    "ethUsdc": "ETH / USDC",
+    "pool": "Pool 0.05%",
+    "refresh": "刷新",
+    "twap": "TWAP",
+    "tick": "Tick",
+    "vol1h": "1小时交易量",
+    "volume24h": "24小时交易量",
+    "volatility1d": "1日波动率",
+    "volatility7d": "7日波动率",
+    "atr": "ATR",
+    "stdDev": "标准差",
+    "liquidity": "流动池深度",
+    "aiRegime": "AI 模式",
+    "confidence": "置信度",
+    "rangeWidth": "区间宽度",
+    "rebalanceThreshold": "再平衡阈值",
+    "trend": "趋势",
+    "capitalAllocation": "资金分配",
+    "rangeConfigs": "区间配置",
+    "aiInputs": "AI 输入",
+    "tip": "来自 Uniswap V3 ETH/USDC 0.05% 流动池的实时市场数据。数据源：The Graph 子图，备用为 CoinGecko。"
+  },
+  "system": {
+    "tvl": "TVL",
+    "fees24h": "24小时手续费",
+    "estApy": "预估 APY",
+    "health": "健康状态",
+    "services": "服务",
+    "vaultDetails": "ERC-4626 金库",
+    "riskMetrics": "风险指标",
+    "keeperBot": "Keeper 机器人",
+    "executionHistory": "执行历史",
+    "links": "链接",
+    "tip": "系统整体状态：链上金库、AI 服务、风险指标及自动化操作历史。"
+  },
+  "metrics": {
+    "price": {
+      "label": "价格",
+      "tip": "Uniswap V3 0.05% 流动池中 ETH 的当前现货价格（以 USDC 计）。实时从链上数据更新。"
+    },
+    "tick": {
+      "label": "Tick",
+      "tip": "Uniswap V3 离散价格系统中的当前 Tick。每个 Tick 代表价格的 0.01% 增量（价格的 log₁.₀₀₀₁）。当前 Tick 决定价格所在的流动性区间。"
+    },
+    "twap": {
+      "label": "TWAP",
+      "tip": "时间加权平均价格 — 抗操纵的时间加权平均值。根据最近的链上观测数据计算。AI 系统将其作为安全价格参考。"
+    },
+    "liquidity": {
+      "label": "流动性",
+      "tip": "流动池当前价格附近的总可用流动性。值越高意味着交易者的滑点越小，流动性提供者产生的手续费越多。"
+    },
+    "volume24h": {
+      "label": "24小时交易量",
+      "tip": "ETH/USDC 0.05% 流动池最近 24 小时的交易量。高交易量为金库产生更多手续费。数据来自 The Graph（Uniswap V3 子图）。"
+    },
+    "volatility1d": {
+      "label": "1日波动率",
+      "tip": "1日已实现波动率，由真实 OHLC 数据的小时对数收益率计算。AI 使用此值确定最佳流动性区间宽度。"
+    },
+    "atr": {
+      "label": "ATR",
+      "tip": "平均真实波幅 — 通过平均价格波动衡量市场波动性。计算方式：价格 × 1日波动率。AI 用其校准再平衡阈值。"
+    },
+    "stdDev": {
+      "label": "标准差",
+      "tip": "价格收益率的标准差。高值表示市场更具波动性。AI 使用此值调整区间宽度及策略之间的资金分配（核心/防御性/机会性）。"
+    },
+    "impermanentLoss": {
+      "label": "IL（无常损失）",
+      "tip": "当前仓位与简单持有代币相比的估计无常损失。当价格偏离入场价格时会产生临时损失。AI 通过再平衡尝试最小化 IL。"
+    },
+    "maxDrawdown": {
+      "label": "最大回撤",
+      "tip": "金库价值从历史峰值的最大百分比下跌。下行风险指标，值越低越好。"
+    },
+    "var95": {
+      "label": "VaR 95%",
+      "tip": "95% 置信度的风险价值 — 正常市场条件下的最大预期损失（超过此值的概率为 5%）。基于当前波动率计算。"
+    },
+    "sharpe": {
+      "label": "夏普比率",
+      "tip": "风险调整后收益。计算方式：（收益 - 无风险利率）/ 标准差。夏普 > 1 为良好，> 2 为优秀。衡量每单位风险获得的额外收益。"
+    },
+    "sortino": {
+      "label": "索提诺比率",
+      "tip": "类似于夏普比率，但仅惩罚下行波动。对主要关注损失的投资者更为相关。索提诺 > 1 为良好。"
+    },
+    "calmar": {
+      "label": "卡玛比率",
+      "tip": "年化收益除以最大回撤。衡量相对于最差历史情景的收益效率。卡玛 > 1 被认为良好。"
+    }
+  },
+  "dataSource": {
+    "theGraph": "● The Graph",
+    "coinGecko": "⚠ CoinGecko",
+    "fallback": "✕ 备用",
+    "loading": "○ 加载中…"
+  },
+  "status": {
+    "live": "实时",
+    "paused": "已暂停",
+    "online": "在线",
+    "offline": "离线",
+    "synced": "已同步",
+    "ready": "就绪"
+  },
+  "actions": {
+    "refresh": "刷新",
+    "approve": "授权 USDC",
+    "confirm": "确认",
+    "viewExplorer": "在浏览器中查看",
+    "adminPanel": "管理面板"
+  },
+  "errors": {
+    "connectWallet": "请先连接钱包",
+    "insufficientBalance": "余额不足",
+    "transactionFailed": "交易失败"
+  }
+}

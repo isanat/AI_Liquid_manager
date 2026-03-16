@@ -1,0 +1,156 @@
+{
+  "tabs": {
+    "portfolio": "Portfolio",
+    "invest": "Investieren",
+    "market": "Markt",
+    "system": "System"
+  },
+  "nav": {
+    "connectWallet": "Wallet Verbinden",
+    "admin": "Admin",
+    "language": "Sprache"
+  },
+  "portfolio": {
+    "myPosition": "Meine Position",
+    "noPosition": "Keine aktive Position",
+    "connectWallet": "Verbinde deine Wallet",
+    "vaiShares": "vAI Anteile",
+    "deposit": "Einzahlen",
+    "withdraw": "Auszahlen",
+    "recentTransactions": "Letzte Transaktionen",
+    "noTransactions": "Noch keine Transaktionen",
+    "marketSummary": "Marktübersicht",
+    "tip": "Zeigt den aktuellen Wert deiner Position im ERC-4626 Vault. Berechnet als: deine Anteile × Anteilspreis. Der Anteilspreis steigt, wenn der Vault Gebühren generiert."
+  },
+  "invest": {
+    "depositMode": "Einzahlen",
+    "withdrawMode": "Auszahlen",
+    "depositLabel": "USDC Betrag",
+    "withdrawLabel": "vAI Anteile",
+    "maxButton": "MAX",
+    "confirmDeposit": "Einzahlung Bestätigen",
+    "confirmWithdraw": "Auszahlung Bestätigen",
+    "fullHistory": "Vollständige Historie",
+    "tip": "Zahle USDC ein, um vAI Anteile zu erhalten. Der Vault nutzt die Mittel, um Liquidität auf Uniswap V3 bereitzustellen und Trading-Gebühren zu generieren, die proportional an Investoren verteilt werden."
+  },
+  "market": {
+    "ethUsdc": "ETH / USDC",
+    "pool": "Pool 0.05%",
+    "refresh": "Aktualisieren",
+    "twap": "TWAP",
+    "tick": "Tick",
+    "vol1h": "Vol 1h",
+    "volume24h": "Volumen 24h",
+    "volatility1d": "Volatilität 1T",
+    "volatility7d": "Volatilität 7T",
+    "atr": "ATR",
+    "stdDev": "Standardabweichung",
+    "liquidity": "Pool Liquidität",
+    "aiRegime": "KI Regime",
+    "confidence": "Konfidenz",
+    "rangeWidth": "Bereichsbreite",
+    "rebalanceThreshold": "Rebalancing-Schwelle",
+    "trend": "Trend",
+    "capitalAllocation": "Kapitalallokation",
+    "rangeConfigs": "Bereichskonfigurationen",
+    "aiInputs": "KI Eingaben",
+    "tip": "Echtzeit-Marktdaten aus dem ETH/USDC 0.05% Pool auf Uniswap V3. Quelle: The Graph Subgraph oder CoinGecko als Fallback."
+  },
+  "system": {
+    "tvl": "TVL",
+    "fees24h": "Gebühren 24h",
+    "estApy": "Gesch. APY",
+    "health": "Zustand",
+    "services": "Dienste",
+    "vaultDetails": "ERC-4626 Vault",
+    "riskMetrics": "Risikometriken",
+    "keeperBot": "Keeper Bot",
+    "executionHistory": "Ausführungshistorie",
+    "links": "Links",
+    "tip": "Gesamtstatus des Systems: On-Chain Vault, KI-Dienste, Risikometriken und Historie automatisierter Operationen."
+  },
+  "metrics": {
+    "price": {
+      "label": "Preis",
+      "tip": "Aktueller Spotpreis von ETH in USDC im Uniswap V3 0.05% Pool. In Echtzeit aus On-Chain-Daten aktualisiert."
+    },
+    "tick": {
+      "label": "Tick",
+      "tip": "Aktueller Tick im diskreten Preissystem von Uniswap V3. Jeder Tick repräsentiert ein 0.01%iges Preisinkrement (log₁.₀₀₀₁ des Preises). Der aktuelle Tick bestimmt, in welchen Liquiditätsbereichen sich der Preis befindet."
+    },
+    "twap": {
+      "label": "TWAP",
+      "tip": "Time-Weighted Average Price — zeitgewichteter Durchschnitt, der manipulationsresistent ist. Aus neuesten On-Chain-Beobachtungen berechnet. Wird vom KI-System als sicherer Preisreferenz verwendet."
+    },
+    "liquidity": {
+      "label": "Liquidität",
+      "tip": "Gesamte verfügbare Liquidität im Pool rund um den aktuellen Preis. Ein höherer Wert bedeutet weniger Slippage für Trader und mehr generierte Gebühren für Liquiditätsanbieter."
+    },
+    "volume24h": {
+      "label": "Volumen 24h",
+      "tip": "Handelsvolumen der letzten 24 Stunden im ETH/USDC 0.05% Pool. Hohes Volumen generiert mehr Gebühren für den Vault. Daten von The Graph (Uniswap V3 Subgraph)."
+    },
+    "volatility1d": {
+      "label": "Volatilität 1T",
+      "tip": "1-Tages realisierte Volatilität, berechnet aus stündlichen logarithmischen Renditen realer OHLC-Daten. Die KI nutzt diesen Wert, um die ideale Breite des Liquiditätsbereichs zu bestimmen."
+    },
+    "atr": {
+      "label": "ATR",
+      "tip": "Average True Range — misst die Marktvolatilität durch die durchschnittliche Preisbewegung. Berechnet als: Preis × 1T Volatilität. Von der KI zur Kalibrierung der Rebalancing-Schwellen verwendet."
+    },
+    "stdDev": {
+      "label": "Standardabweichung",
+      "tip": "Standardabweichung der Preisrenditen. Hohe Werte deuten auf einen volatileren Markt hin. Die KI nutzt diesen Wert, um Bereichsbreiten und die Verteilung zwischen Strategien anzupassen (Core/Defensiv/Opportunistisch)."
+    },
+    "impermanentLoss": {
+      "label": "IL (Impermanenter Verlust)",
+      "tip": "Geschätzter impermanenter Verlust der aktuellen Position im Vergleich zum einfachen Halten der Token. Es ist ein vorübergehender Verlust, der auftritt, wenn sich der Preis vom Einstiegspreis entfernt. Die KI versucht, den IL durch Rebalancing zu minimieren."
+    },
+    "maxDrawdown": {
+      "label": "Max Drawdown",
+      "tip": "Größter prozentualer Rückgang des Vault-Wertes vom historischen Höchststand. Risikoindikator für Verluste. Ein niedrigerer Wert ist besser."
+    },
+    "var95": {
+      "label": "VaR 95%",
+      "tip": "Value at Risk bei 95% Konfidenz — maximal erwarteter Verlust unter normalen Marktbedingungen (5% Wahrscheinlichkeit, diesen Wert zu überschreiten). Auf Basis der aktuellen Volatilität berechnet."
+    },
+    "sharpe": {
+      "label": "Sharpe Ratio",
+      "tip": "Risikobereinigte Rendite. Berechnet als (Rendite - risikofreier Zinssatz) / Standardabweichung. Sharpe > 1 ist gut, > 2 ist ausgezeichnet. Misst die zusätzliche Rendite pro Risikoeinheit."
+    },
+    "sortino": {
+      "label": "Sortino Ratio",
+      "tip": "Ähnlich wie Sharpe, bestraft aber nur negative (Downside) Volatilität. Relevanter für Investoren, die hauptsächlich Verluste fürchten. Sortino > 1 ist gut."
+    },
+    "calmar": {
+      "label": "Calmar Ratio",
+      "tip": "Annualisierte Rendite geteilt durch Max Drawdown. Misst die Renditeeffizienz relativ zum schlechtesten historischen Szenario. Calmar > 1 gilt als gut."
+    }
+  },
+  "dataSource": {
+    "theGraph": "● The Graph",
+    "coinGecko": "⚠ CoinGecko",
+    "fallback": "✕ Fallback",
+    "loading": "○ Laden…"
+  },
+  "status": {
+    "live": "Live",
+    "paused": "Pausiert",
+    "online": "Online",
+    "offline": "Offline",
+    "synced": "Synchronisiert",
+    "ready": "Bereit"
+  },
+  "actions": {
+    "refresh": "Aktualisieren",
+    "approve": "USDC Genehmigen",
+    "confirm": "Bestätigen",
+    "viewExplorer": "Im Explorer Anzeigen",
+    "adminPanel": "Admin Panel"
+  },
+  "errors": {
+    "connectWallet": "Bitte verbinde zuerst deine Wallet",
+    "insufficientBalance": "Unzureichendes Guthaben",
+    "transactionFailed": "Transaktion fehlgeschlagen"
+  }
+}
