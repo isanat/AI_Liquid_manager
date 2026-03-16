@@ -35,9 +35,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy prisma schema + client so db push can run at startup
+# Copy prisma schema + client for runtime migrations
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 USER nextjs
@@ -46,5 +47,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Run prisma db push (creates tables if not exist) then start server
-CMD ["sh", "-c", "npx prisma db push --skip-generate 2>/dev/null || true && node server.js"]
+# Push Prisma schema to SQLite (creates tables) then start Next.js
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js db push --skip-generate 2>&1 | tail -3 && node server.js"]
