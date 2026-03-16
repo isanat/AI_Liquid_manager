@@ -152,5 +152,32 @@
     "connectWallet": "Please connect your wallet first",
     "insufficientBalance": "Insufficient balance",
     "transactionFailed": "Transaction failed"
+  },
+  "aiStrategy": {
+    "card": "LightGBM-powered AI model that analyzes real-time market data to generate optimal liquidity range parameters.",
+    "volatility1d": "1-day realized volatility fed into the LightGBM model. Higher values widen the recommended range to reduce rebalancing frequency.",
+    "volatility7d": "7-day realized volatility. Provides a longer horizon view to detect sustained trends and calibrate range recommendations.",
+    "volumeScore": "Normalized trading volume score (0–100%). High volume suggests more fee income potential, which may justify narrower, higher-concentration ranges.",
+    "liquidityDepth": "Pool liquidity depth around the current price. Low depth means higher price impact per trade, pushing the model toward more conservative range positioning.",
+    "rangeWidth": "AI-recommended percentage width (±) for the liquidity position. Wider in high-volatility periods, narrower when the market is calm.",
+    "confidence": "LightGBM model confidence in the current recommendation (0–100%). Higher confidence means stronger historical pattern support for the generated parameters."
+  },
+  "rangeOptimizer": {
+    "card": "Distributes capital across three strategic ranges — Core (concentrated fees), Defensive (wide safety net), and Opportunistic (ultra-tight for maximum yield).",
+    "core": "Primary liquidity range (±6%). Holds ~60% of capital. Optimized for maximum fee capture during normal daily price movement.",
+    "defensive": "Wide safety range (±20%). Acts as a buffer during extreme volatility to ensure the vault continues earning fees even during sharp price swings.",
+    "opportunistic": "Ultra-tight range (±2%) around the current price. Maximizes fee yield during low-volatility periods. Small allocation to keep rebalancing costs manageable."
+  },
+  "executionEngine": {
+    "card": "Manages on-chain Uniswap V3 positions — opens, rebalances, and collects fees automatically based on AI signals.",
+    "activePositions": "Currently open Uniswap V3 liquidity positions. Green dot = in-range (actively earning fees). Red dot = out-of-range (price moved outside position bounds).",
+    "recentExecutions": "Log of recent automated actions: rebalance operations, fee collections, and position adjustments executed by the keeper bot.",
+    "collectFees": "Collect accumulated trading fees from this Uniswap V3 position. Collected fees are added to the vault and increase the vAI share price.",
+    "openPosition": "Open a new Uniswap V3 liquidity position using the AI-calculated optimal range based on current market volatility and confidence."
+  },
+  "vaultHistory": {
+    "card": "On-chain record of your deposits and withdrawals from the ERC-4626 vault, fetched directly from Arbitrum blockchain events.",
+    "vaiShares": "Vault shares (vAI) issued when depositing USDC. As the vault earns trading fees, the share price increases — the same number of shares becomes worth more USDC over time.",
+    "blockNumber": "Arbitrum block number when this transaction was confirmed on-chain. Click the external link icon to view the full transaction on the block explorer."
   }
 }

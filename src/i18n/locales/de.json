@@ -152,5 +152,32 @@
     "connectWallet": "Bitte verbinde zuerst deine Wallet",
     "insufficientBalance": "Unzureichendes Guthaben",
     "transactionFailed": "Transaktion fehlgeschlagen"
+  },
+  "aiStrategy": {
+    "card": "LightGBM-betriebenes KI-Modell, das Echtzeit-Marktdaten analysiert, um optimale Liquiditätsbereichsparameter zu generieren.",
+    "volatility1d": "1-tägige realisierte Volatilität als Eingabe für das LightGBM-Modell. Höhere Werte verbreitern den empfohlenen Bereich, um die Rebalancing-Häufigkeit zu reduzieren.",
+    "volatility7d": "7-tägige realisierte Volatilität. Bietet einen längerfristigen Ausblick zur Erkennung anhaltender Trends und Kalibrierung von Bereichsempfehlungen.",
+    "volumeScore": "Normalisierter Handelsvolumen-Score (0–100%). Hohes Volumen deutet auf höheres Gebührenertragspotenzial hin, was engere, konzentriertere Bereiche rechtfertigen kann.",
+    "liquidityDepth": "Pool-Liquiditätstiefe rund um den aktuellen Preis. Geringe Tiefe bedeutet höhere Preisauswirkungen pro Handel, was das Modell zu konservativerer Bereichspositionierung drängt.",
+    "rangeWidth": "Von der KI empfohlene prozentuale Breite (±) für die Liquiditätsposition. Breiter in Hochvolatilitätsphasen, enger wenn der Markt ruhig ist.",
+    "confidence": "Konfidenz des LightGBM-Modells in der aktuellen Empfehlung (0–100%). Höhere Konfidenz bedeutet stärkere historische Musterunterstützung für die generierten Parameter."
+  },
+  "rangeOptimizer": {
+    "card": "Verteilt Kapital auf drei strategische Bereiche — Core (konzentrierte Gebühren), Defensiv (breites Sicherheitsnetz) und Opportunistisch (ultra-eng für maximalen Ertrag).",
+    "core": "Primärer Liquiditätsbereich (±6%). Hält ~60% des Kapitals. Optimiert für maximale Gebührenerfassung bei normaler täglicher Preisbewegung.",
+    "defensive": "Breiter Sicherheitsbereich (±20%). Wirkt als Puffer bei extremer Volatilität, um sicherzustellen, dass der Vault auch bei starken Kursschwankungen weiterhin Gebühren verdient.",
+    "opportunistic": "Ultra-enger Bereich (±2%) rund um den aktuellen Preis. Maximiert Gebührenerträge in Niedrigvolatilitätsphasen. Kleine Zuteilung um Rebalancing-Kosten überschaubar zu halten."
+  },
+  "executionEngine": {
+    "card": "Verwaltet On-Chain Uniswap V3 Positionen — öffnet, rebalanciert und sammelt Gebühren automatisch basierend auf KI-Signalen.",
+    "activePositions": "Aktuell offene Uniswap V3 Liquiditätspositionen. Grüner Punkt = im Bereich (verdient aktiv Gebühren). Roter Punkt = außerhalb des Bereichs (Preis hat Positionsgrenzen verlassen).",
+    "recentExecutions": "Protokoll der letzten automatisierten Aktionen: Rebalancing-Operationen, Gebührensammlungen und Positionsanpassungen des Keeper-Bots.",
+    "collectFees": "Gesammelte Handelsgebühren aus dieser Uniswap V3 Position einziehen. Eingezogene Gebühren werden dem Vault hinzugefügt und erhöhen den vAI-Anteilspreis.",
+    "openPosition": "Neue Uniswap V3 Liquiditätsposition mit dem von der KI berechneten optimalen Bereich basierend auf aktueller Marktvolatilität und Konfidenz eröffnen."
+  },
+  "vaultHistory": {
+    "card": "On-Chain-Aufzeichnung deiner Ein- und Auszahlungen aus dem ERC-4626 Vault, direkt aus Arbitrum-Blockchain-Ereignissen abgerufen.",
+    "vaiShares": "Vault-Anteile (vAI), die bei USDC-Einzahlungen ausgegeben werden. Da der Vault Handelsgebühren verdient, steigt der Anteilspreis — dieselbe Anzahl Anteile ist mit der Zeit mehr USDC wert.",
+    "blockNumber": "Arbitrum-Blocknummer, als diese Transaktion On-Chain bestätigt wurde. Klicke auf das externe Link-Symbol, um die vollständige Transaktion im Block-Explorer anzuzeigen."
   }
 }

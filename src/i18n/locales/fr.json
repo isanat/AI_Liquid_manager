@@ -152,5 +152,32 @@
     "connectWallet": "Veuillez d'abord connecter votre portefeuille",
     "insufficientBalance": "Solde insuffisant",
     "transactionFailed": "Transaction échouée"
+  },
+  "aiStrategy": {
+    "card": "Modèle IA propulsé par LightGBM qui analyse les données de marché en temps réel pour générer des paramètres de plage de liquidité optimaux.",
+    "volatility1d": "Volatilité réalisée sur 1 jour alimentant le modèle LightGBM. Des valeurs plus élevées élargissent la plage recommandée pour réduire la fréquence de rééquilibrage.",
+    "volatility7d": "Volatilité réalisée sur 7 jours. Fournit une vue à plus long terme pour détecter les tendances durables et calibrer les recommandations de plage.",
+    "volumeScore": "Score de volume de trading normalisé (0–100%). Un volume élevé suggère un potentiel de revenus en frais plus important, ce qui peut justifier des plages plus étroites et concentrées.",
+    "liquidityDepth": "Profondeur de liquidité du pool autour du prix actuel. Une faible profondeur signifie un impact de prix plus élevé par transaction, poussant le modèle vers un positionnement de plage plus conservateur.",
+    "rangeWidth": "Largeur en pourcentage (±) recommandée par l'IA pour la position de liquidité. Plus large pendant les périodes de forte volatilité, plus étroite quand le marché est calme.",
+    "confidence": "Confiance du modèle LightGBM dans la recommandation actuelle (0–100%). Une confiance plus élevée signifie un soutien historique plus fort pour les paramètres générés."
+  },
+  "rangeOptimizer": {
+    "card": "Distribue le capital sur trois plages stratégiques — Core (frais concentrés), Défensive (large filet de sécurité) et Opportuniste (ultra-étroite pour un rendement maximum).",
+    "core": "Plage de liquidité principale (±6%). Détient ~60% du capital. Optimisée pour la capture maximale de frais lors des mouvements de prix quotidiens normaux.",
+    "defensive": "Large plage de sécurité (±20%). Agit comme tampon lors d'une volatilité extrême pour s'assurer que le vault continue de gagner des frais même lors de fortes fluctuations de prix.",
+    "opportunistic": "Plage ultra-étroite (±2%) autour du prix actuel. Maximise le rendement des frais pendant les périodes de faible volatilité. Petite allocation pour maintenir les coûts de rééquilibrage gérables."
+  },
+  "executionEngine": {
+    "card": "Gère les positions Uniswap V3 on-chain — ouvre, rééquilibre et collecte les frais automatiquement selon les signaux IA.",
+    "activePositions": "Positions de liquidité Uniswap V3 actuellement ouvertes. Point vert = dans la plage (en train de gagner des frais). Point rouge = hors plage (le prix a dépassé les limites de la position).",
+    "recentExecutions": "Journal des actions automatisées récentes : opérations de rééquilibrage, collectes de frais et ajustements de position exécutés par le keeper bot.",
+    "collectFees": "Collecter les frais de trading accumulés de cette position Uniswap V3. Les frais collectés sont ajoutés au vault et augmentent le prix des parts vAI.",
+    "openPosition": "Ouvrir une nouvelle position de liquidité Uniswap V3 en utilisant la plage optimale calculée par l'IA selon la volatilité et la confiance actuelles du marché."
+  },
+  "vaultHistory": {
+    "card": "Enregistrement on-chain de vos dépôts et retraits du vault ERC-4626, récupéré directement depuis les événements de la blockchain Arbitrum.",
+    "vaiShares": "Parts du vault (vAI) émises lors du dépôt de USDC. À mesure que le vault gagne des frais de trading, le prix des parts augmente — le même nombre de parts vaut plus de USDC au fil du temps.",
+    "blockNumber": "Numéro de bloc Arbitrum lorsque cette transaction a été confirmée on-chain. Cliquez sur l'icône de lien externe pour voir la transaction complète dans l'explorateur de blocs."
   }
 }
