@@ -78,6 +78,119 @@ import { UniswapPositions } from '@/components/uniswap-positions';
 import { OpenPositionModal } from '@/components/open-position-modal';
 import { useToast } from '@/hooks/use-toast';
 
+// ── Investor Onboarding Banner ────────────────────────────────────────────────
+function OnboardingBanner() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem('onboarding_dismissed');
+    if (!dismissed) setVisible(true);
+  }, []);
+
+  const dismiss = () => {
+    localStorage.setItem('onboarding_dismissed', '1');
+    setVisible(false);
+  };
+
+  if (!visible) return null;
+
+  const steps = [
+    {
+      icon: Wallet,
+      color: 'from-emerald-500/20 border-emerald-500/30',
+      iconColor: 'text-emerald-400',
+      title: '1. Deposite USDC',
+      desc: 'Conecte sua carteira e deposite USDC. Você recebe shares (vAI) proporcionais ao valor depositado.',
+    },
+    {
+      icon: Brain,
+      color: 'from-cyan-500/20 border-cyan-500/30',
+      iconColor: 'text-cyan-400',
+      title: '2. IA Gerencia',
+      desc: 'O modelo LightGBM detecta o regime de mercado e rebalanceia posições na Uniswap V3 a cada 15 min.',
+    },
+    {
+      icon: TrendingUp,
+      color: 'from-violet-500/20 border-violet-500/30',
+      iconColor: 'text-violet-400',
+      title: '3. Retire com Rendimento',
+      desc: 'Saque a qualquer momento. Seus shares valem mais à medida que as taxas de LP são acumuladas.',
+    },
+  ];
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -16 }}
+        className="mb-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/40 via-card to-cyan-950/30 p-5 sm:p-6 relative"
+      >
+        {/* Close */}
+        <button
+          onClick={dismiss}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Fechar"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Title */}
+        <div className="flex items-center gap-2 mb-1">
+          <div className="p-1 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500">
+            <Droplets className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="font-bold text-base sm:text-lg">Bem-vindo ao AI Liquidity Manager</h2>
+          <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-xs hidden sm:inline-flex">Ao vivo na Arbitrum</Badge>
+        </div>
+        <p className="text-sm text-muted-foreground mb-5 max-w-2xl">
+          Vault tokenizado (ERC-4626) que usa inteligência artificial para gerenciar liquidez na Uniswap V3 e gerar taxas automaticamente para você.
+        </p>
+
+        {/* 3 Steps */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+          {steps.map((s) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={s.title}
+                className={cn(
+                  'rounded-xl border bg-gradient-to-br to-transparent p-4',
+                  s.color
+                )}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon className={cn('h-4 w-4', s.iconColor)} />
+                  <span className="font-semibold text-sm">{s.title}</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Key facts */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex gap-3 flex-wrap text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-emerald-400" /> ERC-4626 auditável</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-cyan-400" /> Rebalanceio a cada 15 min</span>
+            <span className="flex items-center gap-1"><Coins className="h-3 w-3 text-amber-400" /> 2% gestão + 20% performance</span>
+            <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-violet-400" /> Sem lock-up</span>
+          </div>
+          <button
+            onClick={() => { dismiss(); document.getElementById('vault')?.scrollIntoView({ behavior: 'smooth' }); }}
+            className="ml-auto shrink-0 px-4 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-xs font-semibold hover:opacity-90 transition-opacity"
+          >
+            Depositar USDC →
+          </button>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 // Animated number component
 function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 2 }: {
   value: number;
@@ -1472,6 +1585,9 @@ export default function LiquidityManagerDashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-20 sm:pb-6">
+
+        {/* ── Onboarding banner (dismissible) ────────────────────────────────── */}
+        <OnboardingBanner />
 
         {/* ── Overview section ───────────────────────────────────────────────── */}
         <section id="overview">
