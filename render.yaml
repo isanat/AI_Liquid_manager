@@ -6,7 +6,7 @@ services:
   # AI Engine - Python FastAPI + Keeper Bot
   # ============================================
   - type: web
-    name: ai-liquidity-engine
+    name: ai-liquid-manager
     env: python
     region: oregon
     plan: free
@@ -45,7 +45,7 @@ services:
   # Frontend - Next.js
   # ============================================
   - type: web
-    name: ai-liquidity-frontend
+    name: ai-liquid-frontend
     env: node
     region: oregon
     plan: free
@@ -57,7 +57,7 @@ services:
 
       # ── AI engine URL ──
       - key: AI_ENGINE_URL
-        value: https://ai-liquidity-engine.onrender.com
+        value: https://ai-liquid-manager.onrender.com
 
       # ── The Graph API keys ──
       - key: THE_GRAPH_API_KEY
@@ -77,7 +77,7 @@ services:
 
       # ── AI engine public URL (baked at build time) ──
       - key: NEXT_PUBLIC_AI_ENGINE_URL
-        value: https://ai-liquidity-engine.onrender.com
+        value: https://ai-liquid-manager.onrender.com
 
       # ── RPC (public — pode usar Alchemy para produção) ──
       - key: NEXT_PUBLIC_RPC_ARBITRUM
