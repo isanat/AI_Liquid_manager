@@ -1,0 +1,150 @@
+services:
+  # ===========================================
+  # Next.js Frontend Dashboard
+  # ===========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # Internal AI Engine URL (for server-side)
+      - AI_ENGINE_URL=http://ai-engine:8000
+      # Public AI Engine URL (for client-side)
+      - NEXT_PUBLIC_AI_ENGINE_URL=http://164.68.126.14:8001
+      # Other public variables
+      - NEXT_PUBLIC_FRONTEND_URL=https://aitradinglab.cloud
+      # Vault V2 Addresses (supports both USDC and USDT)
+      - NEXT_PUBLIC_VAULT_USDC_ADDRESS=0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C
+      - NEXT_PUBLIC_VAULT_USDT_ADDRESS=0x12a20d3569da6DD2d99E7bC95748283B10729c4C
+      - NEXT_PUBLIC_VAULT_ADDRESS=0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C
+      - NEXT_PUBLIC_CHAIN_ID=42161
+      - NEXT_PUBLIC_WC_PROJECT_ID=9a9a4ec5bde3ebded3da0745fbb6cad3
+      # Database URLs
+      - DATABASE_URL=postgresql://liquidity:liquidity_secret@postgres:5432/liquidity_manager
+      - REDIS_URL=redis://redis:6379
+      # Blockchain
+      - RPC_URL_ARBITRUM=${RPC_URL_ARBITRUM}
+      - VAULT_USDC_ADDRESS=0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C
+      - VAULT_USDT_ADDRESS=0x12a20d3569da6DD2d99E7bC95748283B10729c4C
+      - VAULT_ADDRESS=0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C
+      - KEEPER_PRIVATE_KEY=${KEEPER_PRIVATE_KEY}
+      # Pool addresses
+      - POOL_ETH_USDC=0xC6962004f452bE9203591991D15f6b388e09E8D0
+      - POOL_ETH_USDT=0x3416cF6C708Da44DB2624D63ea0AAef7113527C6
+      # Token addresses
+      - USDC_ADDRESS=0xaf88d065e77c8cC2239327C5EDb3A432268e5831
+      - USDT_ADDRESS=0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
+      - WETH_ADDRESS=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+      # API Keys
+      - THE_GRAPH_API_KEY=${THE_GRAPH_API_KEY}
+      - THE_GRAPH_API_KEY2=${THE_GRAPH_API_KEY2}
+      - NODE_ENV=production
+    depends_on:
+      ai-engine:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - liquidity-network
+    restart: unless-stopped
+    labels:
+      - "coolify.fqdn=aitradinglab.cloud"
+
+  # ===========================================
+  # Python AI Engine - Exposed on port 8001
+  # ===========================================
+  ai-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.ai
+    ports:
+      - "8001:8000"
+    environment:
+      - PORT=8000
+      - PYTHONUNBUFFERED=1
+      - MODEL_PATH=/app/models/saved
+      # CRITICAL: AI Engine needs to call itself for keeper bot
+      - AI_ENGINE_URL=http://localhost:8000
+      # Database
+      - DATABASE_URL=postgresql://liquidity:liquidity_secret@postgres:5432/liquidity_manager
+      - REDIS_URL=redis://redis:6379
+      # Blockchain - V2 Vaults
+      - RPC_URL_ARBITRUM=${RPC_URL_ARBITRUM}
+      - VAULT_USDC_ADDRESS=0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C
+      - VAULT_USDT_ADDRESS=0x12a20d3569da6DD2d99E7bC95748283B10729c4C
+      - VAULT_ADDRESS=0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C
+      - KEEPER_PRIVATE_KEY=${KEEPER_PRIVATE_KEY}
+      # Pool addresses
+      - POOL_ETH_USDC=0xC6962004f452bE9203591991D15f6b388e09E8D0
+      - POOL_ETH_USDT=0x3416cF6C708Da44DB2624D63ea0AAef7113527C6
+      # Token addresses
+      - USDC_ADDRESS=0xaf88d065e77c8cC2239327C5EDb3A432268e5831
+      - USDT_ADDRESS=0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9
+      - WETH_ADDRESS=0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+      # API Keys
+      - THE_GRAPH_API_KEY=${THE_GRAPH_API_KEY}
+      - THE_GRAPH_API_KEY2=${THE_GRAPH_API_KEY2}
+    volumes:
+      - ai-models:/app/models
+    networks:
+      - liquidity-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # ===========================================
+  # Redis Cache - Internal only
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - liquidity-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ===========================================
+  # PostgreSQL Database - Internal only
+  # ===========================================
+  postgres:
+    image: postgres:15-alpine
+    expose:
+      - "5432"
+    environment:
+      - POSTGRES_USER=liquidity
+      - POSTGRES_PASSWORD=liquidity_secret
+      - POSTGRES_DB=liquidity_manager
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - liquidity-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U liquidity -d liquidity_manager"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  liquidity-network:
+    driver: bridge
+
+volumes:
+  ai-models:
+  redis-data:
+  postgres-data:
