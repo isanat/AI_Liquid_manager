@@ -1,0 +1,208 @@
+{
+  "tabs": {
+    "portfolio": "Portfolio",
+    "invest": "Investir",
+    "market": "Mercado",
+    "system": "Sistema"
+  },
+  "nav": {
+    "connectWallet": "Conectar Carteira",
+    "admin": "Admin",
+    "language": "Idioma"
+  },
+  "portfolio": {
+    "myPosition": "Minha Posição",
+    "noPosition": "Sem posição activa",
+    "connectWallet": "Conecta a carteira",
+    "vaiShares": "vAI shares",
+    "deposit": "Depositar",
+    "withdraw": "Sacar",
+    "recentTransactions": "Transações Recentes",
+    "noTransactions": "Sem transações ainda",
+    "marketSummary": "Resumo do Mercado",
+    "tip": "Mostra o valor atual da tua posição no vault ERC-4626. Calculado como: tuas shares × preço da share. O preço da share aumenta à medida que o vault gera taxas."
+  },
+  "invest": {
+    "depositMode": "Depositar",
+    "withdrawMode": "Sacar",
+    "depositLabel": "Valor USDC",
+    "withdrawLabel": "Shares vAI",
+    "maxButton": "MAX",
+    "confirmDeposit": "Confirmar Depósito",
+    "confirmWithdraw": "Confirmar Saque",
+    "fullHistory": "Histórico Completo",
+    "tip": "Deposita USDC para receber shares vAI. O vault usa os fundos para fornecer liquidez no Uniswap V3, gerando taxas de trading que são partilhadas proporcionalmente com os investidores."
+  },
+  "market": {
+    "ethUsdc": "ETH / USDC",
+    "pool": "Pool 0.05%",
+    "refresh": "Atualizar",
+    "twap": "TWAP",
+    "tick": "Tick",
+    "vol1h": "Vol 1h",
+    "volume24h": "Volume 24h",
+    "volatility1d": "Volatilidade 1D",
+    "volatility7d": "Volatilidade 7D",
+    "atr": "ATR",
+    "stdDev": "Std Deviation",
+    "liquidity": "Liquidez Pool",
+    "aiRegime": "Regime IA",
+    "confidence": "Confiança",
+    "rangeWidth": "Largura Range",
+    "rebalanceThreshold": "Rebalance Threshold",
+    "trend": "Tendência",
+    "capitalAllocation": "Alocação de Capital",
+    "rangeConfigs": "Configurações de Range",
+    "aiInputs": "Inputs da IA",
+    "tip": "Dados de mercado em tempo real do pool ETH/USDC 0.05% na Uniswap V3. Fonte: The Graph subgraph ou CoinGecko como fallback."
+  },
+  "system": {
+    "tvl": "TVL",
+    "fees24h": "Taxas 24h",
+    "estApy": "APY Est.",
+    "health": "Saúde",
+    "services": "Serviços",
+    "vaultDetails": "Vault ERC-4626",
+    "riskMetrics": "Métricas de Risco",
+    "keeperBot": "Keeper Bot",
+    "executionHistory": "Histórico de Execuções",
+    "links": "Links",
+    "tip": "Estado geral do sistema: vault on-chain, serviços de IA, métricas de risco e histórico de operações automatizadas."
+  },
+  "metrics": {
+    "price": {
+      "label": "Preço",
+      "tip": "Preço spot atual do ETH em USDC no pool Uniswap V3 0.05%. Atualizado em tempo real a partir de dados on-chain."
+    },
+    "tick": {
+      "label": "Tick",
+      "tip": "Tick atual no sistema de preços discretos da Uniswap V3. Cada tick representa um incremento de 0.01% no preço (log₁.₀₀₀₁ do preço). Tick atual determina em que ranges de liquidez o preço se encontra."
+    },
+    "twap": {
+      "label": "TWAP",
+      "tip": "Time-Weighted Average Price — média ponderada pelo tempo, resistente a manipulação. Calculada de observações recentes on-chain. Usada como referência de preço seguro pelo sistema de IA."
+    },
+    "liquidity": {
+      "label": "Liquidez",
+      "tip": "Liquidez total disponível no pool ao redor do preço atual. Valor mais alto significa menos slippage para traders e mais taxas geradas para provedores de liquidez."
+    },
+    "volume24h": {
+      "label": "Volume 24h",
+      "tip": "Volume de trading nas últimas 24 horas no pool ETH/USDC 0.05%. Volume alto gera mais taxas para o vault. Dados do The Graph (Uniswap V3 subgraph)."
+    },
+    "volatility1d": {
+      "label": "Volatilidade 1D",
+      "tip": "Volatilidade realizada de 1 dia, calculada a partir de retornos logarítmicos horários de dados OHLC reais. A IA usa este valor para determinar a largura ideal do range de liquidez."
+    },
+    "atr": {
+      "label": "ATR",
+      "tip": "Average True Range — mede a volatilidade de mercado pelo movimento médio de preço. Calculado como: preço × volatilidade 1D. Usado pela IA para calibrar thresholds de rebalanceamento."
+    },
+    "stdDev": {
+      "label": "Desvio Padrão",
+      "tip": "Desvio padrão dos retornos de preço. Valores altos indicam mercado mais volátil. A IA usa este valor para ajustar a largura dos ranges e a alocação entre estratégias (Core/Defensive/Opportunistic)."
+    },
+    "impermanentLoss": {
+      "label": "IL (Perda Impermanente)",
+      "tip": "Perda impermanente estimada da posição atual comparada com simplesmente manter os tokens. É uma perda temporária que ocorre quando o preço se afasta do preço de entrada. A IA tenta minimizar o IL através de rebalanceamento."
+    },
+    "maxDrawdown": {
+      "label": "Max Drawdown",
+      "tip": "Maior queda percentual do valor do vault desde o pico histórico. Indicador de risco downside. Valor menor é melhor."
+    },
+    "var95": {
+      "label": "VaR 95%",
+      "tip": "Value at Risk a 95% de confiança — perda máxima esperada em condições normais de mercado (5% de probabilidade de exceder este valor). Calculado com base na volatilidade atual."
+    },
+    "sharpe": {
+      "label": "Sharpe Ratio",
+      "tip": "Retorno ajustado ao risco. Calculado como (retorno - taxa livre de risco) / desvio padrão. Sharpe > 1 é bom, > 2 é excelente. Mede quanto retorno extra se obtém por unidade de risco."
+    },
+    "sortino": {
+      "label": "Sortino Ratio",
+      "tip": "Similar ao Sharpe, mas penaliza apenas volatilidade negativa (downside). Mais relevante para investidores que se preocupam principalmente com perdas. Sortino > 1 é bom."
+    },
+    "calmar": {
+      "label": "Calmar Ratio",
+      "tip": "Retorno anualizado dividido pelo Max Drawdown. Mede eficiência de retorno em relação ao pior cenário histórico. Calmar > 1 é considerado bom."
+    }
+  },
+  "dataSource": {
+    "theGraph": "● The Graph",
+    "coinGecko": "⚠ CoinGecko",
+    "fallback": "✕ Fallback",
+    "loading": "○ Carregando…"
+  },
+  "status": {
+    "live": "Live",
+    "paused": "Pausado",
+    "online": "Online",
+    "offline": "Offline",
+    "synced": "Sincronizado",
+    "ready": "Pronto"
+  },
+  "actions": {
+    "refresh": "Atualizar",
+    "approve": "Aprovar USDC",
+    "confirm": "Confirmar",
+    "viewExplorer": "Ver no Explorer",
+    "adminPanel": "Painel Admin"
+  },
+  "errors": {
+    "connectWallet": "Conecte a carteira primeiro",
+    "insufficientBalance": "Saldo insuficiente",
+    "transactionFailed": "Transação falhou"
+  },
+  "aiStrategy": {
+    "card": "Modelo de IA baseado em LightGBM que analisa dados de mercado em tempo real para gerar parâmetros ótimos de range de liquidez.",
+    "volatility1d": "Volatilidade realizada de 1 dia alimentada no modelo LightGBM. Valores maiores alargam o range recomendado para reduzir a frequência de rebalanceamento.",
+    "volatility7d": "Volatilidade realizada de 7 dias. Fornece visão de horizonte mais longo para detetar tendências sustentadas e calibrar as recomendações de range.",
+    "volumeScore": "Pontuação de volume de trading normalizada (0–100%). Volume alto sugere maior potencial de taxas, o que pode justificar ranges mais estreitos e concentrados.",
+    "liquidityDepth": "Profundidade de liquidez do pool ao redor do preço atual. Pouca profundidade significa maior impacto de preço por trade, levando o modelo a posicionamentos mais conservadores.",
+    "rangeWidth": "Largura percentual (±) recomendada pela IA para a posição de liquidez. Mais largo em períodos de alta volatilidade, mais estreito quando o mercado está calmo.",
+    "confidence": "Confiança do modelo LightGBM na recomendação atual (0–100%). Maior confiança significa suporte histórico mais forte para os parâmetros gerados."
+  },
+  "rangeOptimizer": {
+    "card": "Distribui capital entre três ranges estratégicos — Core (taxas concentradas), Defensivo (rede de segurança ampla) e Oportunístico (ultra-estreito para rendimento máximo).",
+    "core": "Range de liquidez principal (±6%). Mantém ~60% do capital. Otimizado para máxima captura de taxas durante movimentação normal de preço.",
+    "defensive": "Range de segurança amplo (±20%). Atua como buffer durante volatilidade extrema para garantir que o vault continue a gerar taxas mesmo em oscilações bruscas.",
+    "opportunistic": "Range ultra-estreito (±2%) ao redor do preço atual. Maximiza o rendimento de taxas em períodos de baixa volatilidade. Alocação pequena para manter custos de rebalanceamento gerenciáveis."
+  },
+  "executionEngine": {
+    "card": "Gere posições Uniswap V3 on-chain — abre, rebalanceia e coleta taxas automaticamente com base nos sinais da IA.",
+    "activePositions": "Posições de liquidez Uniswap V3 atualmente abertas. Ponto verde = dentro do range (a gerar taxas). Ponto vermelho = fora do range (preço saiu dos limites da posição).",
+    "recentExecutions": "Log de ações automatizadas recentes: operações de rebalanceamento, coletas de taxas e ajustes de posição executados pelo keeper bot.",
+    "collectFees": "Coletar taxas de trading acumuladas desta posição Uniswap V3. As taxas coletadas são adicionadas ao vault e aumentam o preço da share vAI.",
+    "openPosition": "Abrir uma nova posição de liquidez Uniswap V3 usando o range ótimo calculado pela IA com base na volatilidade e confiança atuais do mercado."
+  },
+  "vaultHistory": {
+    "card": "Registo on-chain dos teus depósitos e saques do vault ERC-4626, obtido diretamente dos eventos da blockchain Arbitrum.",
+    "vaiShares": "Shares do vault (vAI) emitidas ao depositar USDC. À medida que o vault ganha taxas de trading, o preço da share sobe — o mesmo número de shares vale mais USDC ao longo do tempo.",
+    "blockNumber": "Número do bloco Arbitrum quando esta transação foi confirmada on-chain. Clica no ícone de link externo para ver a transação completa no explorador de blocos."
+  },
+  "vaultManager": {
+    "card": "Vault ERC-4626 tokenizado no Arbitrum. Os depósitos são convertidos em shares vAI. O vault fornece liquidez automaticamente na Uniswap V3, gerando taxas de trading que aumentam o preço da share.",
+    "totalAssets": "Valor total em USDC bloqueado no vault on-chain, incluindo todas as posições de liquidez Uniswap V3 ativas e qualquer buffer de USDC inativo.",
+    "sharePrice": "Preço atual de uma share vAI em USDC. Começa a $1,00 e sobe à medida que o vault ganha taxas. Teu lucro = (preço atual - preço de entrada) × shares detidas.",
+    "yourPosition": "Valor atual da tua posição em USDC, calculado como: tuas shares vAI × preço atual da share.",
+    "walletUsdc": "Teu saldo de USDC na carteira conectada, disponível para depositar no vault.",
+    "deposit": "Deposita USDC para receber shares vAI. Requer duas confirmações na carteira: primeiro aprovar o gasto de USDC, depois confirmar o depósito.",
+    "withdraw": "Resgata (queima) as tuas shares vAI para receber USDC ao preço atual da share. Sem período de bloqueio.",
+    "fees": "Taxa de gestão: cobrada anualmente sobre os ativos totais. Taxa de performance: cobrada sobre os lucros acima do high-water mark. Ambas vão para o tesouro do protocolo."
+  },
+  "strategyController": {
+    "card": "Orquestra o ciclo completo de automação: recolha de dados → inferência da IA → otimização de range → execução on-chain. Corre automaticamente a cada 15 minutos via keeper bot.",
+    "cycleInterval": "Com que frequência o keeper bot corre automaticamente um ciclo completo de estratégia — recolhendo dados de mercado, inferência da IA e rebalanceamentos se necessário.",
+    "nextRun": "Tempo estimado até o keeper bot iniciar o próximo ciclo automático de estratégia.",
+    "runCycle": "Aciona manualmente um ciclo de estratégia: obtém dados de mercado em tempo real do The Graph, corre inferência LightGBM e atualiza os parâmetros de range.",
+    "rebalance": "Envia sinal imediato de rebalanceamento para o keeper bot executar ajustes de posição on-chain com os últimos parâmetros calculados pela IA."
+  },
+  "riskDashboard": {
+    "card": "Monitoriza métricas de risco e regime de mercado — perda impermanente, drawdown, Sharpe ratio, VaR e pontuação de rebalanceamento.",
+    "marketRegime": "Regime de mercado atual detetado pela IA. Determina a postura estratégica: Trend (seguir momentum), Range (taxas de mean-reversion), High-Vol (alargar posições), Low-Vol (concentrar para rendimento).",
+    "trend": "Indicador de força de tendência (0–100%). Valores altos indicam momentum direcional forte, favorecendo ranges mais largos e posicionamento direcional.",
+    "vol": "Nível de volatilidade atual em relação à média histórica. Valores altos acionam ranges de liquidez mais largos e alocação de capital mais defensiva.",
+    "volume": "Volume de trading atual em relação à média histórica. Volume alto indica mercado ativo com maior potencial de geração de taxas.",
+    "rebalanceScore": "Pontuação composta que mede o quão longe a posição atual está do ótimo. Quando excede o threshold (padrão 0,65), o keeper bot aciona um rebalanceamento automático."
+  }
+}
