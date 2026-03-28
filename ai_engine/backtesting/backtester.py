@@ -2,6 +2,9 @@
 AI Liquidity Manager - Backtesting Framework
 
 Simulates LP performance with historical data to validate strategies.
+
+IMPORTANT: Uses SharedParameters from risk module to ensure consistency
+between backtest and live execution.
 """
 import sys
 from pathlib import Path
@@ -21,6 +24,13 @@ import structlog
 from models.types import MarketRegime, StrategyOutput
 from models.strategy_model import LiquidityStrategyModel, RuleBasedFallback
 from features.feature_engineering import FeatureEngineer, MarketFeatures
+
+# Import shared risk config for consistency
+try:
+    from risk.risk_config import get_risk_config, RiskConfig, SharedParameters, GasCosts
+    RISK_CONFIG_AVAILABLE = True
+except ImportError:
+    RISK_CONFIG_AVAILABLE = False
 
 logger = structlog.get_logger()
 
@@ -79,34 +89,67 @@ class BacktestResult:
 
 class LiquidityBacktester:
     """
-    Backtests LP strategies with realistic assumptions:
-    - Gas costs per transaction
-    - Slippage on swaps
-    - Fee accrual based on volume in range
-    - Impermanent loss calculation
-    """
+    Backtests LP strategies with realistic assumptions.
     
-    # Gas costs (estimated for Arbitrum)
-    GAS_COSTS = {
-        'mint': 0.10,       # $0.10
-        'burn': 0.08,       # $0.08
-        'collect': 0.05,    # $0.05
-        'swap': 0.03,       # $0.03
-    }
+    IMPORTANT: Parameters are loaded from SharedParameters to ensure
+    consistency between backtest and live execution.
+    
+    Default values match production:
+    - Gas costs: $0.10-0.35 per operation (Arbitrum)
+    - Slippage: 10 bps
+    - Max rebalances: 3 per day
+    - Fee tier: 500 (0.05% pool)
+    """
     
     def __init__(
         self,
         initial_capital: float = 100_000,
-        gas_cost_multiplier: float = 1.0,
-        slippage_bps: int = 10,
-        max_rebalances_per_day: int = 5,
-        fee_tier: int = 3000,  # 0.3%
+        gas_cost_multiplier: float = None,  # Load from config if None
+        slippage_bps: int = None,
+        max_rebalances_per_day: int = None,
+        fee_tier: int = None,
     ):
+        # Load from shared config if available
+        if RISK_CONFIG_AVAILABLE:
+            config = get_risk_config()
+            self.gas_cost_multiplier = gas_cost_multiplier if gas_cost_multiplier is not None else config.shared.gas_cost_multiplier
+            self.slippage_bps = slippage_bps if slippage_bps is not None else config.shared.slippage_bps
+            self.max_rebalances_per_day = max_rebalances_per_day if max_rebalances_per_day is not None else config.shared.max_rebalances_per_day
+            self.fee_tier = fee_tier if fee_tier is not None else config.shared.fee_tier
+            
+            # Load gas costs from config
+            self.GAS_COSTS = {
+                'mint': config.shared.gas_costs.mint,
+                'burn': config.shared.gas_costs.burn,
+                'collect': config.shared.gas_costs.collect,
+                'swap': config.shared.gas_costs.swap,
+                'rebalance_full': config.shared.gas_costs.rebalance_full,
+            }
+            
+            logger.info("Backtester initialized with shared config",
+                       gas_multiplier=self.gas_cost_multiplier,
+                       slippage_bps=self.slippage_bps,
+                       max_rebalances=self.max_rebalances_per_day,
+                       fee_tier=self.fee_tier)
+        else:
+            # Fallback defaults (should match production!)
+            self.gas_cost_multiplier = gas_cost_multiplier if gas_cost_multiplier is not None else 1.5
+            self.slippage_bps = slippage_bps if slippage_bps is not None else 10
+            self.max_rebalances_per_day = max_rebalances_per_day if max_rebalances_per_day is not None else 3
+            self.fee_tier = fee_tier if fee_tier is not None else 500
+            
+            # Default gas costs (Arbitrum)
+            self.GAS_COSTS = {
+                'mint': 0.12,
+                'burn': 0.10,
+                'collect': 0.06,
+                'swap': 0.04,
+                'rebalance_full': 0.35,
+            }
+            
+            logger.warning("Backtester using fallback defaults - NOT synced with production!")
+        
         self.initial_capital = initial_capital
-        self.gas_cost_multiplier = gas_cost_multiplier
-        self.slippage_bps = slippage_bps
-        self.max_rebalances_per_day = max_rebalances_per_day
-        self.fee_tier = fee_tier
         
         # State
         self.cash = initial_capital

@@ -1,13 +1,20 @@
 """
-AI Liquid Vault V2 — Keeper Bot
-═══════════════════════════════
+AI Liquid Vault V2 — Keeper Bot with Risk Management
+═══════════════════════════════════════════════════════
 Runs every 15 minutes (APScheduler) and:
-  1. Calls FastAPI /predict → get AI strategy params (tick range, allocation %)
-  2. Converts the suggested price range → Uniswap V3 ticks
-  3. Calls vault.rebalance(tickLower, tickUpper, amountWeth, amountStable) on Arbitrum
-  4. Calls vault.collectFees() to harvest LP fees back into the vault
+  1. Checks risk limits (pilot phase, protection limits, circuit breaker)
+  2. Calls FastAPI /predict → get AI strategy params (tick range, allocation %)
+  3. Converts the suggested price range → Uniswap V3 ticks
+  4. Calls vault.rebalance(tickLower, tickUpper, amountWeth, amountStable) on Arbitrum
+  5. Calls vault.collectFees() to harvest LP fees back into the vault
+  6. Records rebalance in pilot manager for phase progression
 
 SUPPORTS: Both USDC and USDT vaults
+
+RISK CONTROLS:
+  - Pilot Phase: Progressive capital deployment ($100 -> $1K -> $10K -> Production)
+  - Protection Limits: Max rebalances/day, volatility pause, exposure limits
+  - Circuit Breaker: Auto-pause on repeated failures
 
 Required environment variables:
   VAULT_USDC_ADDRESS    – USDC vault address
@@ -19,6 +26,8 @@ Required environment variables:
 Optional:
   REBALANCE_INTERVAL    – cron interval in minutes (default 15)
   USDC_DEPLOY_PCT       – % of idle stablecoin to deploy per cycle (default 80)
+  RISK_MAX_REBALANCES_PER_DAY  – max rebalances per day (default 3)
+  RISK_PAUSE_THRESHOLD_1D      – volatility pause threshold (default 0.15)
 """
 
 from __future__ import annotations
@@ -27,13 +36,29 @@ import asyncio
 import logging
 import math
 import os
+import sys
 import time
-from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
+from datetime import datetime, timezone, timedelta
+from typing import Optional, List, Dict, Any, Tuple
 
 import httpx
 from web3 import AsyncWeb3, Web3
 from web3.middleware import ExtraDataToPOAMiddleware
+
+# Add parent path for risk imports
+_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _parent not in sys.path:
+    sys.path.insert(0, _parent)
+
+# Risk management imports
+try:
+    from risk.risk_config import get_risk_config, RiskConfig
+    from risk.protection_limits import get_protection_limits, get_circuit_breaker, ProtectionLimits, CircuitBreaker
+    from risk.pilot_phases import get_pilot_manager, PilotPhaseManager, PilotPhase
+    RISK_ENABLED = True
+except ImportError as e:
+    logging.warning(f"Risk management not available: {e}")
+    RISK_ENABLED = False
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +181,11 @@ keeper_state: dict = {
     "total_runs":            0,
     "total_rebalances":      0,
     "status":                "idle",
-    "vaults_processed":      [],  # Track which vaults were processed
+    "vaults_processed":      [],
+    # Risk status
+    "risk_enabled":          RISK_ENABLED,
+    "pilot_phase":           "unknown" if RISK_ENABLED else "disabled",
+    "circuit_breaker":       "unknown" if RISK_ENABLED else "disabled",
 }
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -192,6 +221,139 @@ def clamp_tick(tick: int) -> int:
     return max(-TICK_LIMIT, min(TICK_LIMIT, tick))
 
 
+# ─── Risk Management Functions ────────────────────────────────────────────────
+
+def _get_market_volatility(prediction: dict) -> Tuple[float, float]:
+    """Extract volatility metrics from AI prediction."""
+    vol_1d = float(prediction.get("volatility_1d", 0.05))  # Default 5%
+    vol_7d = float(prediction.get("volatility_7d", vol_1d * 1.5))
+    return vol_1d, vol_7d
+
+
+async def _check_risk_limits(
+    vault_address: str,
+    amount_to_deploy: float,
+    idle_amount: float,
+    current_tvl: float,
+    volatility_1d: float,
+    volatility_7d: float,
+) -> Tuple[bool, str, dict]:
+    """
+    Check all risk limits before rebalance.
+    
+    Returns:
+        (allowed: bool, reason: str, details: dict)
+    """
+    if not RISK_ENABLED:
+        return True, "Risk management disabled", {"enabled": False}
+    
+    details = {"enabled": True, "checks": []}
+    
+    try:
+        # 1. Check pilot phase limits
+        pilot = get_pilot_manager()
+        can_deploy, pilot_reason = pilot.can_deploy(amount_to_deploy)
+        details["pilot_phase"] = pilot.current_phase.value
+        details["pilot_max_capital"] = pilot.get_max_allowed_capital()
+        
+        if not can_deploy:
+            return False, f"Pilot limit: {pilot_reason}", details
+        
+        details["checks"].append({"check": "pilot", "passed": True})
+        
+        # 2. Check protection limits
+        limits = get_protection_limits()
+        allowed, breaches = limits.check_limits(
+            vault_address=vault_address,
+            current_volatility_1d=volatility_1d,
+            current_volatility_7d=volatility_7d,
+            current_tvl=current_tvl,
+            idle_amount=idle_amount,
+            proposed_deploy=amount_to_deploy,
+        )
+        
+        details["breaches"] = [
+            {"type": b.limit_type.value, "action": b.action_taken.value, "message": b.message}
+            for b in breaches
+        ]
+        
+        if not allowed:
+            blocked = [b for b in breaches if b.action_taken.value in ("block", "pause")]
+            reason = blocked[0].message if blocked else "Protection limit exceeded"
+            return False, f"Protection limit: {reason}", details
+        
+        details["checks"].append({"check": "protection_limits", "passed": True})
+        
+        # 3. Check circuit breaker
+        cb = get_circuit_breaker(vault_address)
+        can_execute, cb_reason = cb.can_execute()
+        details["circuit_breaker"] = cb.state.value
+        
+        if not can_execute:
+            return False, f"Circuit breaker: {cb_reason}", details
+        
+        details["checks"].append({"check": "circuit_breaker", "passed": True})
+        
+        # 4. Check risk config
+        config = get_risk_config()
+        stats = limits.get_or_create_stats(vault_address)
+        last_rebalance_minutes = 9999
+        if stats.last_rebalance_time:
+            last_rebalance_minutes = (datetime.now(timezone.utc) - stats.last_rebalance_time).total_seconds() / 60
+        
+        can_rebalance, config_reason = config.can_rebalance(
+            today_count=stats.rebalance_count,
+            current_volatility_1d=volatility_1d,
+            last_rebalance_minutes_ago=int(last_rebalance_minutes),
+        )
+        
+        if not can_rebalance:
+            return False, f"Risk config: {config_reason}", details
+        
+        details["checks"].append({"check": "risk_config", "passed": True})
+        details["today_rebalances"] = stats.rebalance_count
+        details["max_rebalances"] = config.shared.max_rebalances_per_day
+        
+        return True, "All risk checks passed", details
+        
+    except Exception as e:
+        logger.error(f"Risk check error: {e}")
+        # Fail open - allow operation if risk check fails
+        return True, f"Risk check error (allowed): {e}", {"error": str(e)}
+
+
+def _record_rebalance_result(
+    vault_address: str,
+    success: bool,
+    gas_cost: float,
+    amount_deployed: float,
+):
+    """Record rebalance result for risk tracking."""
+    if not RISK_ENABLED:
+        return
+    
+    try:
+        # Record in protection limits
+        limits = get_protection_limits()
+        limits.record_rebalance(vault_address, gas_cost, amount_deployed)
+        
+        # Record in pilot manager
+        pilot = get_pilot_manager()
+        pilot.record_rebalance(success=success, gas_cost=gas_cost)
+        
+        # Update circuit breaker
+        cb = get_circuit_breaker(vault_address)
+        if success:
+            cb.record_success()
+        else:
+            cb.record_failure("Rebalance failed")
+        
+        logger.info(f"Recorded rebalance: success={success}, gas=${gas_cost:.2f}")
+        
+    except Exception as e:
+        logger.error(f"Failed to record rebalance: {e}")
+
+
 # ─── Core keeper logic ────────────────────────────────────────────────────────
 
 async def run_keeper_cycle_for_vault(
@@ -202,7 +364,7 @@ async def run_keeper_cycle_for_vault(
     asset_symbol: str,
     keeper_account: str
 ) -> dict:
-    """Execute one keeper cycle for a single vault."""
+    """Execute one keeper cycle for a single vault with risk management.""""
 
     ai_url = os.getenv("AI_ENGINE_URL", f"http://localhost:{os.getenv('PORT', '8000')}")
     stable_pct = float(os.getenv("STABLE_DEPLOY_PCT", os.getenv("USDC_DEPLOY_PCT", "80"))) / 100.0
@@ -270,9 +432,46 @@ async def run_keeper_cycle_for_vault(
         await _collect_fees_v2(vault, w3, keeper_account, result)
         return result
 
+    # Get volatility for risk checks
+    volatility_1d, volatility_7d = _get_market_volatility(prediction)
+    
+    # Get current TVL for risk checks
+    try:
+        total_assets = await vault.functions.totalAssets().call()
+        current_tvl = total_assets / 1e6
+    except:
+        current_tvl = idle_stable_human
+    
     # Amount of stablecoin to deploy (V2: amountStable, amountWeth=0)
     deploy_ratio = min(core_pct, stable_pct)
-    amount_stable = int(idle_stable * deploy_ratio)  # stablecoin in wei (6 dec)
+    proposed_amount = idle_stable * deploy_ratio
+    
+    # ─── RISK CHECKS ──────────────────────────────────────────────────────────
+    
+    allowed, risk_reason, risk_details = await _check_risk_limits(
+        vault_address=vault_address,
+        amount_to_deploy=proposed_amount / 1e6,  # USD value
+        idle_amount=idle_stable_human,
+        current_tvl=current_tvl,
+        volatility_1d=volatility_1d,
+        volatility_7d=volatility_7d,
+    )
+    
+    result["risk_check"] = risk_details
+    
+    if not allowed:
+        result["error"] = f"Risk blocked: {risk_reason}"
+        logger.warning(f"Keeper: {result['error']}")
+        await _collect_fees_v2(vault, w3, keeper_account, result)
+        return result
+    
+    # Apply any exposure limits from risk check
+    max_exposure_pct = risk_details.get("max_exposure_pct", deploy_ratio)
+    if max_exposure_pct < deploy_ratio:
+        deploy_ratio = max_exposure_pct
+        logger.info(f"Keeper: exposure limited to {deploy_ratio:.1%} by risk config")
+    
+    amount_stable = int(idle_stable * deploy_ratio)
     amount_weth = 0  # Stablecoin-only strategy — no WETH deployment
 
     if amount_stable == 0:
@@ -283,7 +482,7 @@ async def run_keeper_cycle_for_vault(
     logger.info(
         f"Keeper: rebalancing {asset_symbol} | range ${lower_price:.0f}–${upper_price:.0f} "
         f"| ticks [{tick_lower}, {tick_upper}] | deploying {amount_stable/1e6:,.2f} {asset_symbol} "
-        f"| confidence {confidence:.0%}"
+        f"| confidence {confidence:.0%} | volatility 1d={volatility_1d:.1%}"
     )
 
     # Call vault.rebalance() - V2 signature
@@ -319,10 +518,36 @@ async def run_keeper_cycle_for_vault(
         result["action"] = "rebalance"
         result["tx_hash"] = tx_hash_hex
         result["success"] = True
+        
+        # Estimate gas cost (Arbitrum ~ $0.10-0.20 per rebalance)
+        gas_cost = 0.15  # USD estimate
+        if RISK_ENABLED:
+            try:
+                config = get_risk_config()
+                gas_cost = config.get_adjusted_gas_cost("rebalance_full")
+            except:
+                pass
+        
+        # Record successful rebalance
+        _record_rebalance_result(
+            vault_address=vault_address,
+            success=True,
+            gas_cost=gas_cost,
+            amount_deployed=amount_stable / 1e6,
+        )
 
     except Exception as e:
         result["error"] = f"Rebalance failed: {e}"
         logger.error(f"Keeper: {result['error']}")
+        
+        # Record failed rebalance
+        _record_rebalance_result(
+            vault_address=vault_address,
+            success=False,
+            gas_cost=0,
+            amount_deployed=0,
+        )
+        
         return result
 
     # Collect fees
@@ -405,6 +630,17 @@ async def keeper_job() -> None:
     keeper_state["last_run_timestamp"] = time.time()
     keeper_state["total_runs"] += 1
     keeper_state["vaults_processed"] = []
+    
+    # Initialize pilot manager and update status
+    if RISK_ENABLED:
+        try:
+            pilot = get_pilot_manager()
+            limits = get_protection_limits()
+            keeper_state["pilot_phase"] = pilot.current_phase.value
+            keeper_state["circuit_breaker"] = "checked_per_vault"
+            logger.info(f"Risk status: phase={pilot.current_phase.value}, max_capital=${pilot.get_max_allowed_capital():,.0f}")
+        except Exception as e:
+            logger.warning(f"Could not initialize risk managers: {e}")
 
     # Setup web3
     rpc_url = os.getenv("RPC_URL_ARBITRUM")
