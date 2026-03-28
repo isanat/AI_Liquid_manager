@@ -364,7 +364,7 @@ async def run_keeper_cycle_for_vault(
     asset_symbol: str,
     keeper_account: str
 ) -> dict:
-    """Execute one keeper cycle for a single vault with risk management.""""
+    """Execute one keeper cycle for a single vault with risk management."""
 
     ai_url = os.getenv("AI_ENGINE_URL", f"http://localhost:{os.getenv('PORT', '8000')}")
     stable_pct = float(os.getenv("STABLE_DEPLOY_PCT", os.getenv("USDC_DEPLOY_PCT", "80"))) / 100.0
