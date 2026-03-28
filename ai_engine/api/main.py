@@ -58,6 +58,11 @@ app.add_middleware(
 
 # ── Include Risk Routes ───────────────────────────────────────────────────────
 try:
+    # Add ai_engine to path for risk module imports
+    _ai_engine = str(Path(__file__).resolve().parent.parent)
+    if _ai_engine not in sys.path:
+        sys.path.insert(0, _ai_engine)
+    
     from api.risk_routes import router as risk_router
     app.include_router(risk_router)
     logger.info("Risk management routes registered")
