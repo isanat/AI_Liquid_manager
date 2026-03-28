@@ -5,7 +5,10 @@ import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import {
   VAULT_ADDRESS,
+  VAULT_USDC_ADDRESS,
+  VAULT_USDT_ADDRESS,
   USDC_ARBITRUM_ONE,
+  USDT_ARBITRUM_ONE,
   readVaultState,
   readUserVaultState,
   approveStablecoin,
@@ -13,6 +16,7 @@ import {
   redeemFromVault,
   type VaultState,
   type UserVaultState,
+  type AssetType,
 } from '@/lib/vault-contract';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -317,23 +321,49 @@ function VaultManager() {
   const { data: walletClient } = useWalletClient();
   const { t } = useI18n();
 
+  // Selected asset type (USDC or USDT)
+  const [selectedAsset, setSelectedAsset] = useState<AssetType>('USDC');
+  
+  // Per-vault states
+  const [usdcVaultState, setUsdcVaultState] = useState<VaultState | null>(null);
+  const [usdtVaultState, setUsdtVaultState] = useState<VaultState | null>(null);
+  const [usdcUserState, setUsdcUserState] = useState<UserVaultState | null>(null);
+  const [usdtUserState, setUsdtUserState] = useState<UserVaultState | null>(null);
+  
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawShares, setWithdrawShares] = useState('');
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [vaultState, setVaultState] = useState<VaultState | null>(null);
-  const [userState, setUserState] = useState<UserVaultState | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  const vaultDeployed = Boolean(VAULT_ADDRESS);
+  // Get current vault and asset addresses based on selection
+  const currentVaultAddress = selectedAsset === 'USDC' ? VAULT_USDC_ADDRESS : VAULT_USDT_ADDRESS;
+  const currentAssetAddress = selectedAsset === 'USDC' ? USDC_ARBITRUM_ONE : USDT_ARBITRUM_ONE;
+  
+  // Current states based on selection
+  const vaultState = selectedAsset === 'USDC' ? usdcVaultState : usdtVaultState;
+  const userState = selectedAsset === 'USDC' ? usdcUserState : usdtUserState;
+  
+  const vaultDeployed = Boolean(currentVaultAddress);
 
   const refreshState = useCallback(async () => {
     if (!publicClient) return;
-    const vs = await readVaultState(publicClient);
-    setVaultState(vs);
+    
+    // Refresh both vaults
+    const [usdcVs, usdtVs] = await Promise.all([
+      readVaultState(publicClient, VAULT_USDC_ADDRESS),
+      readVaultState(publicClient, VAULT_USDT_ADDRESS),
+    ]);
+    setUsdcVaultState(usdcVs);
+    setUsdtVaultState(usdtVs);
+    
     if (address) {
-      const us = await readUserVaultState(publicClient, address);
-      setUserState(us);
+      const [usdcUs, usdtUs] = await Promise.all([
+        readUserVaultState(publicClient, address, VAULT_USDC_ADDRESS, USDC_ARBITRUM_ONE),
+        readUserVaultState(publicClient, address, VAULT_USDT_ADDRESS, USDT_ARBITRUM_ONE),
+      ]);
+      setUsdcUserState(usdcUs);
+      setUsdtUserState(usdtUs);
     }
   }, [publicClient, address]);
 
@@ -350,7 +380,7 @@ function VaultManager() {
     }
     const amount = parseFloat(depositAmount);
     if (!depositAmount || isNaN(amount) || amount <= 0) {
-      toast({ title: 'Invalid amount', description: 'Enter a positive USDC amount.', variant: 'destructive' });
+      toast({ title: 'Invalid amount', description: `Enter a positive ${selectedAsset} amount.`, variant: 'destructive' });
       return;
     }
     if (!vaultDeployed) {
@@ -360,14 +390,14 @@ function VaultManager() {
     setIsDepositing(true);
     setTxHash(null);
     try {
-      // Step 1: Approve USDC
-      toast({ title: 'Step 1/2 — Approve USDC', description: 'Confirm approval in your wallet…' });
-      const approveTx = await approveStablecoin(walletClient, address, depositAmount, USDC_ARBITRUM_ONE);
+      // Step 1: Approve stablecoin
+      toast({ title: `Step 1/2 — Approve ${selectedAsset}`, description: 'Confirm approval in your wallet…' });
+      const approveTx = await approveStablecoin(walletClient, address, depositAmount, currentAssetAddress, currentVaultAddress);
       await publicClient.waitForTransactionReceipt({ hash: approveTx });
 
       // Step 2: Deposit
       toast({ title: 'Step 2/2 — Deposit', description: 'Confirm deposit in your wallet…' });
-      const depositTx = await depositToVault(walletClient, address, depositAmount);
+      const depositTx = await depositToVault(walletClient, address, depositAmount, currentVaultAddress);
       await publicClient.waitForTransactionReceipt({ hash: depositTx });
 
       setTxHash(depositTx);
@@ -375,7 +405,7 @@ function VaultManager() {
       await refreshState();
       toast({
         title: 'Deposit successful',
-        description: `$${amount.toLocaleString()} deposited into vault. vAI shares received.`,
+        description: `$${amount.toLocaleString()} ${selectedAsset} deposited into vault. vAI shares received.`,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Transaction failed';
@@ -403,7 +433,7 @@ function VaultManager() {
     if (userState && sharesToRedeem > userState.shares) {
       toast({
         title: 'Insufficient shares',
-        description: `You hold ${formatUnits(userState.shares, 18)} vAI shares.`,
+        description: `You hold ${formatUnits(userState.shares, 18)} vAI shares in ${selectedAsset} vault.`,
         variant: 'destructive',
       });
       return;
@@ -412,7 +442,7 @@ function VaultManager() {
     setTxHash(null);
     try {
       toast({ title: 'Redeeming vAI shares', description: 'Confirm transaction in your wallet…' });
-      const redeemTx = await redeemFromVault(walletClient, address, sharesToRedeem);
+      const redeemTx = await redeemFromVault(walletClient, address, sharesToRedeem, currentVaultAddress);
       await publicClient.waitForTransactionReceipt({ hash: redeemTx });
 
       setTxHash(redeemTx);
@@ -420,7 +450,7 @@ function VaultManager() {
       await refreshState();
       toast({
         title: 'Withdrawal successful',
-        description: `Shares redeemed — USDC returned to your wallet.`,
+        description: `Shares redeemed — ${selectedAsset} returned to your wallet.`,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Transaction failed';
@@ -433,7 +463,13 @@ function VaultManager() {
   const totalAssetsUsd = vaultState ? parseFloat(vaultState.totalAssetsUsd) : 0;
   const sharePriceUsd  = vaultState ? parseFloat(vaultState.sharePriceUsd) : 1.0;
   const userAssetsUsd  = userState ? parseFloat(userState.assetsValueUsd) : 0;
-  const userUsdcBal    = userState ? parseFloat(formatUnits(userState.stablecoinBalance, 6)) : 0;
+  const userAssetBal   = userState ? parseFloat(formatUnits(userState.stablecoinBalance, 6)) : 0;
+
+  // Combined stats for both vaults
+  const totalTVL = (usdcVaultState ? parseFloat(usdcVaultState.totalAssetsUsd) : 0) + 
+                   (usdtVaultState ? parseFloat(usdtVaultState.totalAssetsUsd) : 0);
+  const userTotalPosition = (usdcUserState ? parseFloat(usdcUserState.assetsValueUsd) : 0) + 
+                            (usdtUserState ? parseFloat(usdtUserState.assetsValueUsd) : 0);
 
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">
@@ -450,15 +486,6 @@ function VaultManager() {
               </div>
               <CardDescription>
                 ERC-4626 · {NETWORK_LABEL}
-                {VAULT_ADDRESS && (
-                  <a
-                    href={`${EXPLORER_BASE}/address/${VAULT_ADDRESS}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="ml-2 font-mono text-xs text-emerald-400 hover:underline"
-                  >
-                    {VAULT_ADDRESS.slice(0, 6)}…{VAULT_ADDRESS.slice(-4)}
-                  </a>
-                )}
               </CardDescription>
             </div>
           </div>
@@ -468,11 +495,59 @@ function VaultManager() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-        {/* On-chain stats */}
+        {/* Combined Stats */}
+        <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 border border-emerald-500/10">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Total TVL (Both Vaults)</p>
+            <p className="text-xl font-bold">
+              <AnimatedNumber value={totalTVL} prefix="$" decimals={0} />
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Your Total Position</p>
+            <p className="text-xl font-bold">
+              <AnimatedNumber value={userTotalPosition} prefix="$" decimals={2} />
+            </p>
+          </div>
+        </div>
+
+        {/* Asset Selection Tabs */}
+        <Tabs value={selectedAsset} onValueChange={(v) => setSelectedAsset(v as AssetType)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="USDC" className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              USDC Vault
+            </TabsTrigger>
+            <TabsTrigger value="USDT" className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              USDT Vault
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="USDC" className="mt-4 space-y-4">
+            {/* USDC Vault Info */}
+            <div className="text-xs text-muted-foreground">
+              Vault: <a href={`${EXPLORER_BASE}/address/${VAULT_USDC_ADDRESS}`} target="_blank" rel="noopener noreferrer" className="font-mono text-emerald-400 hover:underline">
+                {VAULT_USDC_ADDRESS?.slice(0, 6)}…{VAULT_USDC_ADDRESS?.slice(-4)}
+              </a>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="USDT" className="mt-4 space-y-4">
+            {/* USDT Vault Info */}
+            <div className="text-xs text-muted-foreground">
+              Vault: <a href={`${EXPLORER_BASE}/address/${VAULT_USDT_ADDRESS}`} target="_blank" rel="noopener noreferrer" className="font-mono text-emerald-400 hover:underline">
+                {VAULT_USDT_ADDRESS?.slice(0, 6)}…{VAULT_USDT_ADDRESS?.slice(-4)}
+              </a>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Selected Vault Stats */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              Total Assets (on-chain)
+              {selectedAsset} in Vault
               <CardInfo tip={t('vaultManager.totalAssets')} />
             </p>
             <p className="text-xl font-bold">
@@ -481,7 +556,7 @@ function VaultManager() {
           </div>
           <div className="space-y-1">
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              vAI Share Price
+              Share Price
               <CardInfo tip={t('vaultManager.sharePrice')} />
             </p>
             <p className="text-xl font-bold">
@@ -501,11 +576,11 @@ function VaultManager() {
               </div>
               <div className="space-y-1">
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  Wallet USDC
+                  Wallet {selectedAsset}
                   <CardInfo tip={t('vaultManager.walletUsdc')} />
                 </p>
                 <p className="text-xl font-bold">
-                  <AnimatedNumber value={userUsdcBal} prefix="$" decimals={2} />
+                  <AnimatedNumber value={userAssetBal} prefix="$" decimals={2} />
                 </p>
               </div>
             </>
@@ -531,12 +606,12 @@ function VaultManager() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  Deposit USDC
+                  Deposit {selectedAsset}
                   <CardInfo tip={t('vaultManager.deposit')} />
                 </p>
                 <input
                   type="number"
-                  placeholder="Amount (USDC)"
+                  placeholder={`Amount (${selectedAsset})`}
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleDeposit()}
