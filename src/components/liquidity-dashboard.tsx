@@ -1661,17 +1661,19 @@ export default function LiquidityManagerDashboard() {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 shrink-0">
+              <a href="/" className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 shrink-0 hover:opacity-80 transition-opacity">
                 <Droplets className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-              </div>
+              </a>
               <div>
                 <h1 className="font-bold leading-none">
                   {/* Mobile: short title */}
                   <span className="text-sm sm:hidden">AI Liquidity</span>
                   {/* Desktop: full title */}
-                  <span className="hidden sm:inline text-xl">AI Liquidity Manager</span>
+                  <span className="hidden sm:inline text-xl">Dashboard Técnico</span>
                 </h1>
-                <p className="hidden sm:block text-xs text-muted-foreground mt-0.5">Adaptive Range Strategy Engine</p>
+                <p className="hidden sm:block text-xs text-muted-foreground mt-0.5">
+                  <a href="/" className="hover:text-emerald-400 transition-colors">← Voltar à Landing</a>
+                </p>
               </div>
             </div>
             {/* Right actions */}
