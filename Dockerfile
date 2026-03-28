@@ -12,7 +12,9 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client before build
+# Generate Prisma Client before build (needs DATABASE_URL for postgresql provider)
+ARG DATABASE_URL=postgresql://liquidity:liquidity_secret_2024@ai-liquid-db:5432/liquidity_manager
+ENV DATABASE_URL=$DATABASE_URL
 RUN bunx prisma generate
 
 # NEXT_PUBLIC_* vars must be present at build time (next build bakes them in).
