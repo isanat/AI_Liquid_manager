@@ -5,10 +5,10 @@ import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import {
   VAULT_ADDRESS,
-  USDC_ARBITRUM,
+  USDC_ARBITRUM_ONE,
   readVaultState,
   readUserVaultState,
-  approveUsdc,
+  approveStablecoin,
   depositToVault,
   redeemFromVault,
   type VaultState,
@@ -362,7 +362,7 @@ function VaultManager() {
     try {
       // Step 1: Approve USDC
       toast({ title: 'Step 1/2 — Approve USDC', description: 'Confirm approval in your wallet…' });
-      const approveTx = await approveUsdc(walletClient, address, depositAmount);
+      const approveTx = await approveStablecoin(walletClient, address, depositAmount, USDC_ARBITRUM_ONE);
       await publicClient.waitForTransactionReceipt({ hash: approveTx });
 
       // Step 2: Deposit
@@ -433,7 +433,7 @@ function VaultManager() {
   const totalAssetsUsd = vaultState ? parseFloat(vaultState.totalAssetsUsd) : 0;
   const sharePriceUsd  = vaultState ? parseFloat(vaultState.sharePriceUsd) : 1.0;
   const userAssetsUsd  = userState ? parseFloat(userState.assetsValueUsd) : 0;
-  const userUsdcBal    = userState ? parseFloat(formatUnits(userState.usdcBalance, 6)) : 0;
+  const userUsdcBal    = userState ? parseFloat(formatUnits(userState.stablecoinBalance, 6)) : 0;
 
   return (
     <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-sm">

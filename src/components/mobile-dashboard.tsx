@@ -15,9 +15,9 @@ import { useVaultHistory } from '@/hooks/use-vault-history';
 import { useLiquidityStore } from '@/lib/liquidity-store';
 import { useI18n } from '@/contexts/i18n-context';
 import {
-  VAULT_ADDRESS, USDC_ARBITRUM,
+  VAULT_ADDRESS, USDC_ARBITRUM_ONE,
   readVaultState, readUserVaultState,
-  approveUsdc, depositToVault, redeemFromVault,
+  approveStablecoin, depositToVault, redeemFromVault,
   type VaultState, type UserVaultState,
 } from '@/lib/vault-contract';
 import { useToast } from '@/hooks/use-toast';
@@ -249,7 +249,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
   const { toast } = useToast();
   const { t } = useI18n();
 
-  const usdcBal = userState ? parseFloat(formatUnits(userState.usdcBalance, 6)) : 0;
+  const usdcBal = userState ? parseFloat(formatUnits(userState.stablecoinBalance, 6)) : 0;
   const userUsd = userState ? parseFloat(userState.assetsValueUsd) : 0;
   const vaiShares = userState ? parseFloat(formatUnits(userState.shares, 18)) : 0;
 
@@ -264,7 +264,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
     setBusy(true); setTxHash(null);
     try {
       toast({ title: 'Passo 1/2 — Aprovar USDC', description: 'Confirma na carteira…' });
-      const approveTx = await approveUsdc(walletClient, address, depositAmt);
+      const approveTx = await approveStablecoin(walletClient, address, depositAmt, USDC_ARBITRUM_ONE);
       await publicClient.waitForTransactionReceipt({ hash: approveTx });
       toast({ title: 'Passo 2/2 — Depositar', description: 'Confirma na carteira…' });
       const depTx = await depositToVault(walletClient, address, depositAmt);

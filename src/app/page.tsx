@@ -1,6 +1,6 @@
 'use client';
 
-import { LiquidityManagerDashboard } from '@/components/liquidity-dashboard';
+import LiquidityManagerDashboard from '@/components/liquidity-dashboard';
 import { MobileDashboard } from '@/components/mobile-dashboard';
 import { useEffect, useState } from 'react';
 
