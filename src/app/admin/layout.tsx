@@ -18,6 +18,7 @@ const nav = [
     items: [
       { href: '/admin',           label: 'Dashboard',        icon: LayoutDashboard },
       { href: '/admin/system',    label: 'Sistema ao Vivo',  icon: Activity },
+      { href: '/admin/risk',      label: 'Risk Management',  icon: Shield },
     ],
   },
   {

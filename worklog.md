@@ -2266,3 +2266,70 @@ postgresql://user:password@postgres:5432/database
 ---
 
 **Analysis Complete** ✅
+
+---
+Task ID: 4
+Agent: Risk Management Agent
+Task: Implement Financial Risk Controls for LP/IL
+
+Work Log:
+- Created shared risk configuration (ai_engine/risk/risk_config.py)
+- Created protection limits with circuit breakers (ai_engine/risk/protection_limits.py)
+- Created progressive pilot phases (ai_engine/risk/pilot_phases.py)
+- Updated keeper to integrate risk checks before every rebalance
+- Updated backtester to use shared config from risk module
+- Created API endpoints for risk monitoring and control
+- Created comprehensive documentation (docs/risk-management.md)
+- Committed and deployed to production
+
+Stage Summary:
+- ✅ Shared parameters sync backtest ↔ production
+- ✅ Protection limits: max 3 rebalances/day, volatility pause at 15%
+- ✅ Circuit breaker: auto-pause after 3 failures
+- ✅ Pilot phases: $100 → $1K → $10K → Production
+- ✅ API endpoints: /risk/status, /risk/pilot/*, /risk/vault/*
+- ✅ Documentation complete
+- ✅ Deployed to Coolify (status: healthy)
+
+## RISK MANAGEMENT FEATURES
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| Shared Config | ✅ | fee_tier=500, gas_mult=1.5, slippage=10bps |
+| Protection Limits | ✅ | Max 3 rebalances/day, volatility pause |
+| Circuit Breaker | ✅ | 3 failures → OPEN, 60min recovery |
+| Pilot Phases | ✅ | Progressive capital: $100 → Production |
+| API Endpoints | ✅ | GET /risk/status, POST /risk/pilot/* |
+
+## PILOT PHASE PROGRESSION
+
+| Phase | Max Capital | Duration | Min Return | Max DD |
+|-------|-------------|----------|------------|--------|
+| SMOKE_TEST | $100 | 7 days | -10% | 15% |
+| PILOT_1K | $1,000 | 14 days | -5% | 12% |
+| PILOT_10K | $10,000 | 30 days | -3% | 10% |
+| PRODUCTION | $500K+ | Annual | 0% | 15% |
+
+## ENVIRONMENT VARIABLES TO SET
+
+```bash
+RISK_FEE_TIER=500
+RISK_MAX_REBALANCES_PER_DAY=3
+RISK_GAS_COST_MULTIPLIER=1.5
+RISK_SLIPPAGE_BPS=10
+RISK_PAUSE_THRESHOLD_1D=0.15
+```
+
+## FILES CREATED/MODIFIED
+
+```
+ai_engine/risk/__init__.py          - Module init
+ai_engine/risk/risk_config.py       - Shared parameters
+ai_engine/risk/protection_limits.py - Limits & circuit breakers
+ai_engine/risk/pilot_phases.py      - Progressive deployment
+ai_engine/api/risk_routes.py        - API endpoints
+ai_engine/keeper/keeper.py          - Integrated risk checks
+ai_engine/backtesting/backtester.py - Uses shared config
+docs/risk-management.md             - Documentation
+```
+
