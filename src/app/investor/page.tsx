@@ -45,6 +45,7 @@ import {
   type VaultState,
   type UserVaultState,
 } from '@/lib/vault-contract';
+import { GovernanceGateInvestor } from '@/components/governance-gate-investor';
 import Link from 'next/link';
 
 const NETWORK_LABEL = ACTIVE_CHAIN_ID === 421614 ? 'Arbitrum Sepolia' : 'Arbitrum One';
@@ -432,6 +433,11 @@ export default function InvestorDashboard() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Governance Gate - Validação da Estratégia */}
+        <div className="mb-8">
+          <GovernanceGateInvestor />
         </div>
 
         {/* Main Content: Deposit/Withdraw + History */}
