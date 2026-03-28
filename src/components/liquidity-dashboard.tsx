@@ -1693,6 +1693,15 @@ export default function LiquidityManagerDashboard() {
                 </svg>
                 <span className="hidden sm:inline text-xs">Admin</span>
               </a>
+              {/* Investor Dashboard — icon + text on desktop, icon-only on mobile */}
+              <a
+                href="/investor"
+                className="flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-emerald-700 text-emerald-400 hover:text-emerald-100 hover:border-emerald-600 transition-all"
+                title="Investor View"
+              >
+                <TrendingUp className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline text-xs">Investidor</span>
+              </a>
               <LanguageSwitcher />
               {/* Wallet — icon-only on mobile (text hidden internally in WalletConnect) */}
               <WalletConnect />
