@@ -2,6 +2,14 @@
 AI Liquidity Manager - Main Entry Point
 
 Run the AI engine as a standalone service.
+
+Commands:
+  train       - Train model on synthetic data (BOOTSTRAP tier)
+  backtest    - Run backtest with rule-based strategy
+  inference   - Test inference with sample data
+  validate    - Validate model against production thresholds
+  report      - Generate investor report from backtest
+  all         - Run all tests
 """
 import os
 import sys
@@ -27,11 +35,16 @@ def train_model(output_path: str = "models/saved"):
     Train model using the proper feature engineering pipeline on synthetic price history.
     Uses the same pipeline as the API's auto-train, so the feature vectors are
     structurally identical to what the model will receive at inference time.
+    
+    NOTE: This creates a BOOTSTRAP model (trained on synthetic data with rule-based labels).
+          For production use, train on real historical data with proper validation.
     """
     import numpy as np
     from models.types import MarketRegime
+    from validation.model_validator import ModelTier
 
-    logger.info("Training model using feature engineering pipeline on synthetic data...")
+    logger.info("Training BOOTSTRAP model using synthetic data...",
+                tier=ModelTier.BOOTSTRAP.value)
 
     history = generate_synthetic_history(days=365, volatility=0.04)
 
@@ -86,7 +99,9 @@ def train_model(output_path: str = "models/saved"):
                 output=str(output),
                 samples=len(X_rows),
                 metrics=metrics,
-                version=model.model_version)
+                version=model.model_version,
+                tier=ModelTier.BOOTSTRAP.value,
+                warning="BOOTSTRAP model - NOT validated for production use")
 
     return model, metrics
 
@@ -122,6 +137,98 @@ def run_backtest(days: int = 30, capital: float = 100_000):
     print("="*50 + "\n")
     
     return results
+
+
+def validate_model(model_version: str = "1.0.0", days: int = 90, capital: float = 100_000):
+    """
+    Validate model against production acceptance thresholds.
+    
+    This runs a backtest and checks if the results meet the minimum
+    requirements for promoting the model to production.
+    """
+    from validation.model_validator import (
+        ModelValidator, 
+        ModelTier, 
+        validate_model_for_production
+    )
+    
+    logger.info("Validating model against production thresholds...",
+                model_version=model_version,
+                backtest_days=days)
+    
+    # Run backtest
+    history = generate_synthetic_history(days=days, volatility=0.05)
+    backtester = LiquidityBacktester(initial_capital=capital)
+    results = backtester.run(history, use_rule_fallback=True)
+    
+    # Validate
+    validator = ModelValidator()
+    validation_result = validator.validate(
+        backtest_results=results,
+        model_version=model_version,
+        model_tier=ModelTier.BOOTSTRAP,  # Current tier
+    )
+    
+    # Print results
+    print(validation_result.summary())
+    
+    if validation_result.can_promote:
+        print("\n" + "="*50)
+        print("MODEL APPROVED FOR PRODUCTION")
+        print("="*50)
+        print("Next steps:")
+        print("1. Retrain on REAL historical data (not synthetic)")
+        print("2. Run validation on out-of-sample data")
+        print("3. Get approval from risk committee")
+        print("4. Deploy with feature flag / gradual rollout")
+        print("="*50)
+    else:
+        print("\n" + "="*50)
+        print("MODEL NOT APPROVED FOR PRODUCTION")
+        print("="*50)
+        print("This is expected for BOOTSTRAP models.")
+        print("To create a production-ready model:")
+        print("1. Collect real historical data")
+        print("2. Train on proper train/test split")
+        print("3. Validate on out-of-sample data")
+        print("4. Re-run this validation command")
+        print("="*50)
+    
+    return validation_result
+
+
+def generate_report(days: int = 30, capital: float = 100_000):
+    """
+    Generate investor report from backtest results.
+    
+    Creates a formatted report suitable for institutional investors
+    with performance metrics, risk analysis, and benchmark comparison.
+    """
+    from reporting.investor_report import InvestorReportGenerator
+    
+    logger.info("Generating investor report...", days=days)
+    
+    # Run backtest
+    history = generate_synthetic_history(days=days, volatility=0.05)
+    backtester = LiquidityBacktester(initial_capital=capital)
+    results = backtester.run(history, use_rule_fallback=True)
+    
+    # Generate report
+    generator = InvestorReportGenerator(
+        management_fee_bps=200,    # 2%
+        performance_fee_bps=2000,  # 20%
+    )
+    
+    report = generator.generate(
+        backtest_results=results,
+        vault_address="0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C",  # Example
+        asset="USDC",
+    )
+    
+    # Print markdown report
+    print(report.to_markdown())
+    
+    return report
 
 
 def test_inference():
@@ -177,7 +284,7 @@ def test_inference():
     print("\n" + "="*50)
     print("INFERENCE OUTPUT")
     print("="*50)
-    print(f"Range Width:       ±{output.range_width:.1f}%")
+    print(f"Range Width:       +/-{output.range_width:.1f}%")
     print(f"Range Bias:        {output.range_bias:>10.2f}")
     print(f"Rebalance Thresh:  {output.rebalance_threshold:>10.2f}")
     print("-"*50)
@@ -198,11 +305,13 @@ def test_inference():
 
 def main():
     parser = argparse.ArgumentParser(description="AI Liquidity Manager")
-    parser.add_argument("command", choices=["train", "backtest", "inference", "all"],
+    parser.add_argument("command", 
+                       choices=["train", "backtest", "inference", "validate", "report", "all"],
                        help="Command to run")
     parser.add_argument("--days", type=int, default=30, help="Backtest days")
     parser.add_argument("--capital", type=float, default=100_000, help="Initial capital")
     parser.add_argument("--output", default="models/saved", help="Model output path")
+    parser.add_argument("--version", default="1.0.0", help="Model version for validation")
     
     args = parser.parse_args()
     
@@ -215,6 +324,12 @@ def main():
     elif args.command == "inference":
         test_inference()
     
+    elif args.command == "validate":
+        validate_model(args.version, args.days, args.capital)
+    
+    elif args.command == "report":
+        generate_report(args.days, args.capital)
+    
     elif args.command == "all":
         print("\n" + "="*60)
         print("AI LIQUIDITY MANAGER - FULL TEST")
@@ -223,8 +338,10 @@ def main():
         train_model(args.output)
         run_backtest(args.days, args.capital)
         test_inference()
+        validate_model(args.version, args.days, args.capital)
+        generate_report(args.days, args.capital)
         
-        print("\n✅ All tests completed successfully!")
+        print("\nAll tests completed successfully!")
 
 
 if __name__ == "__main__":
