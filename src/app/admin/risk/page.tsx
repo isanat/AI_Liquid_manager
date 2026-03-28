@@ -102,6 +102,7 @@ const PHASE_LABELS: Record<string, { label: string; color: string; capital: stri
   pilot_10k: { label: 'Pilot $10K', color: 'bg-purple-500', capital: '$10,000' },
   production: { label: 'Production', color: 'bg-green-500', capital: '$50K+' },
   paused: { label: 'Paused', color: 'bg-red-500', capital: '-' },
+  unavailable: { label: 'Unavailable', color: 'bg-gray-500', capital: '?' },
 };
 
 const VAULTS = [
@@ -119,12 +120,61 @@ export default function RiskManagementPage() {
   const fetchRiskStatus = async () => {
     try {
       const response = await fetch('/api/ai?endpoint=/risk/status');
-      if (!response.ok) throw new Error('Failed to fetch risk status');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch risk status`);
+      }
       const data = await response.json();
-      setRiskStatus(data);
-      setError(null);
+      
+      // Check if response has expected structure
+      if (!data.pilot || !data.protection || !data.config) {
+        // Risk management not available - show fallback UI
+        setRiskStatus({
+          status: 'disabled',
+          pilot: {
+            current_phase: 'unavailable',
+            max_capital: 0,
+            duration_days: 0,
+            vault_address: null,
+            metrics: {
+              start_time: null,
+              start_capital: 0,
+              end_capital: 0,
+              return_pct: 0,
+              max_drawdown: 0,
+              rebalances: 0,
+              gas_cost: 0,
+            },
+            phase_history: [],
+            pass_criteria: {},
+          },
+          protection: {
+            paused_vaults: {},
+            daily_stats: {},
+            recent_breaches: [],
+            limits: {
+              max_rebalances_per_day: 3,
+              min_minutes_between: 60,
+              volatility_pause: 0.15,
+              max_exposure_per_cycle: 50,
+            },
+          },
+          config: {
+            version: 'N/A',
+            environment: 'unknown',
+            fee_tier: 500,
+            max_rebalances_per_day: 3,
+            gas_multiplier: 1.5,
+            slippage_bps: 10,
+          },
+        });
+        setError(data.error || data.detail || 'Risk management module not loaded');
+      } else {
+        setRiskStatus(data);
+        setError(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
+      setRiskStatus(null);
     } finally {
       setLoading(false);
     }
@@ -203,12 +253,12 @@ export default function RiskManagementPage() {
       </div>
 
       {/* Status Banner */}
-      {riskStatus.status !== 'ok' && (
+      {(riskStatus.status !== 'ok' || error) && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Risk Management Disabled</AlertTitle>
+          <AlertTitle>Risk Management {riskStatus.status === 'disabled' ? 'Disabled' : 'Warning'}</AlertTitle>
           <AlertDescription>
-            Risk management is not available. Operations will proceed without limits.
+            {error || 'Risk management is not fully available. Some features may not work.'}
           </AlertDescription>
         </Alert>
       )}

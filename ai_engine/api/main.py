@@ -56,6 +56,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Include Risk Routes ───────────────────────────────────────────────────────
+try:
+    from api.risk_routes import router as risk_router
+    app.include_router(risk_router)
+    logger.info("Risk management routes registered")
+except ImportError as e:
+    logger.warning(f"Risk routes not available: {e}")
+
 # ── Pydantic models ───────────────────────────────────────────────────────────
 
 class MarketDataInput(BaseModel):
