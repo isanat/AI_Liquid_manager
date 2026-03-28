@@ -74,6 +74,7 @@ import { MobileNav } from '@/components/mobile-nav';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { CardInfo } from '@/components/card-info';
 import { useI18n } from '@/contexts/i18n-context';
+import { DualVaultSummary } from '@/components/dual-vault-summary';
 
 // Derive network label and explorer from ACTIVE_CHAIN_ID (set via NEXT_PUBLIC_CHAIN_ID)
 const NETWORK_LABEL   = ACTIVE_CHAIN_ID === 421614 ? 'Arbitrum Sepolia' : 'Arbitrum One';
@@ -1746,6 +1747,11 @@ export default function LiquidityManagerDashboard() {
           {/* Data Layer */}
           <div className="mb-6">
             <DataLayer />
+          </div>
+
+          {/* Dual Vault Summary - USDC & USDT */}
+          <div className="mb-6">
+            <DualVaultSummary />
           </div>
         </section>
 
