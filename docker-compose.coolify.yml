@@ -1,6 +1,7 @@
 services:
   # ===========================================
   # Next.js Frontend Dashboard
+  # Uses standalone Coolify PostgreSQL and Redis services
   # ===========================================
   frontend:
     build:
@@ -21,9 +22,9 @@ services:
       - NEXT_PUBLIC_VAULT_ADDRESS=0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C
       - NEXT_PUBLIC_CHAIN_ID=42161
       - NEXT_PUBLIC_WC_PROJECT_ID=9a9a4ec5bde3ebded3da0745fbb6cad3
-      # Database URLs
-      - DATABASE_URL=postgresql://liquidity:liquidity_secret@postgres:5432/liquidity_manager
-      - REDIS_URL=redis://redis:6379
+      # Database URLs - Use standalone Coolify services
+      - DATABASE_URL=postgresql://liquidity:liquidity_secret_2024@ai-liquid-db:5432/liquidity_manager
+      - REDIS_URL=redis://ai-liquid-redis:6379/0
       # Blockchain
       - RPC_URL_ARBITRUM=${RPC_URL_ARBITRUM}
       - VAULT_USDC_ADDRESS=0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C
@@ -43,10 +44,6 @@ services:
       - NODE_ENV=production
     depends_on:
       ai-engine:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     networks:
       - liquidity-network
@@ -69,9 +66,9 @@ services:
       - MODEL_PATH=/app/models/saved
       # CRITICAL: AI Engine needs to call itself for keeper bot
       - AI_ENGINE_URL=http://localhost:8000
-      # Database
-      - DATABASE_URL=postgresql://liquidity:liquidity_secret@postgres:5432/liquidity_manager
-      - REDIS_URL=redis://redis:6379
+      # Database - Use standalone Coolify services
+      - DATABASE_URL=postgresql://liquidity:liquidity_secret_2024@ai-liquid-db:5432/liquidity_manager
+      - REDIS_URL=redis://ai-liquid-redis:6379/0
       # Blockchain - V2 Vaults
       - RPC_URL_ARBITRUM=${RPC_URL_ARBITRUM}
       - VAULT_USDC_ADDRESS=0x876aBa48F1263Ffb16046Ef2909265BeDCb3174C
@@ -100,51 +97,9 @@ services:
       start_period: 40s
     restart: unless-stopped
 
-  # ===========================================
-  # Redis Cache - Internal only
-  # ===========================================
-  redis:
-    image: redis:7-alpine
-    expose:
-      - "6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - liquidity-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # ===========================================
-  # PostgreSQL Database - Internal only
-  # ===========================================
-  postgres:
-    image: postgres:15-alpine
-    expose:
-      - "5432"
-    environment:
-      - POSTGRES_USER=liquidity
-      - POSTGRES_PASSWORD=liquidity_secret
-      - POSTGRES_DB=liquidity_manager
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - liquidity-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U liquidity -d liquidity_manager"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
 networks:
   liquidity-network:
-    driver: bridge
+    external: true
 
 volumes:
   ai-models:
-  redis-data:
-  postgres-data:
