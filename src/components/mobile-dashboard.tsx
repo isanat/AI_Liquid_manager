@@ -15,10 +15,18 @@ import { useVaultHistory } from '@/hooks/use-vault-history';
 import { useLiquidityStore } from '@/lib/liquidity-store';
 import { useI18n } from '@/contexts/i18n-context';
 import {
-  VAULT_ADDRESS, USDC_ARBITRUM_ONE,
-  readVaultState, readUserVaultState,
-  approveStablecoin, depositToVault, redeemFromVault,
-  type VaultState, type UserVaultState,
+  VAULT_USDC_ADDRESS,
+  VAULT_USDT_ADDRESS,
+  USDC_ARBITRUM_ONE,
+  USDT_ARBITRUM_ONE,
+  readVaultState,
+  readUserVaultState,
+  approveStablecoin,
+  depositToVault,
+  redeemFromVault,
+  type VaultState,
+  type UserVaultState,
+  type AssetType,
 } from '@/lib/vault-contract';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -32,21 +40,39 @@ const NETWORK_LABEL = ACTIVE_CHAIN_ID === 421614 ? 'Arb Sepolia' : 'Arbitrum One
 
 type Tab = 'portfolio' | 'invest' | 'market' | 'system';
 
-// ─── Shared vault state hook ───────────────────────────────────────────────────
+// ─── Dual Vault State Hook ────────────────────────────────────────────────────
 
-function useVaultData() {
+function useDualVaultData() {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
-  const [vaultState, setVaultState] = useState<VaultState | null>(null);
-  const [userState, setUserState] = useState<UserVaultState | null>(null);
+  
+  // USDC Vault
+  const [usdcVaultState, setUsdcVaultState] = useState<VaultState | null>(null);
+  const [usdcUserState, setUsdcUserState] = useState<UserVaultState | null>(null);
+  
+  // USDT Vault
+  const [usdtVaultState, setUsdtVaultState] = useState<VaultState | null>(null);
+  const [usdtUserState, setUsdtUserState] = useState<UserVaultState | null>(null);
 
   const refresh = useCallback(async () => {
     if (!publicClient) return;
-    const vs = await readVaultState(publicClient);
-    setVaultState(vs);
+    
+    // Fetch both vaults in parallel
+    const [usdcVs, usdtVs] = await Promise.all([
+      readVaultState(publicClient, VAULT_USDC_ADDRESS),
+      readVaultState(publicClient, VAULT_USDT_ADDRESS),
+    ]);
+    setUsdcVaultState(usdcVs);
+    setUsdtVaultState(usdtVs);
+    
+    // Fetch user states for both vaults
     if (address) {
-      const us = await readUserVaultState(publicClient, address);
-      setUserState(us);
+      const [usdcUs, usdtUs] = await Promise.all([
+        readUserVaultState(publicClient, address, VAULT_USDC_ADDRESS, USDC_ARBITRUM_ONE),
+        readUserVaultState(publicClient, address, VAULT_USDT_ADDRESS, USDT_ARBITRUM_ONE),
+      ]);
+      setUsdcUserState(usdcUs);
+      setUsdtUserState(usdtUs);
     }
   }, [publicClient, address]);
 
@@ -56,21 +82,93 @@ function useVaultData() {
     return () => clearInterval(iv);
   }, [refresh]);
 
-  return { vaultState, userState, refresh, isConnected };
+  // Combined stats
+  const totalTVL = (usdcVaultState ? parseFloat(usdcVaultState.totalAssetsUsd) : 0) +
+                   (usdtVaultState ? parseFloat(usdtVaultState.totalAssetsUsd) : 0);
+  const userTotalPosition = (usdcUserState ? parseFloat(usdcUserState.assetsValueUsd) : 0) +
+                            (usdtUserState ? parseFloat(usdtUserState.assetsValueUsd) : 0);
+
+  return {
+    // Individual vaults
+    usdcVaultState,
+    usdtVaultState,
+    usdcUserState,
+    usdtUserState,
+    // Combined
+    totalTVL,
+    userTotalPosition,
+    // Utils
+    refresh,
+    isConnected,
+  };
+}
+
+// ─── Vault Selector Component ─────────────────────────────────────────────────
+
+function VaultSelector({ 
+  selected, 
+  onChange 
+}: { 
+  selected: AssetType; 
+  onChange: (asset: AssetType) => void;
+}) {
+  return (
+    <div className="flex rounded-xl bg-zinc-900 border border-zinc-800 p-1 gap-1">
+      <button
+        onClick={() => onChange('USDC')}
+        className={cn(
+          'flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2',
+          selected === 'USDC' 
+            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+            : 'text-zinc-400 hover:text-zinc-200',
+        )}
+      >
+        <span className="w-2 h-2 rounded-full bg-blue-500" />
+        USDC
+      </button>
+      <button
+        onClick={() => onChange('USDT')}
+        className={cn(
+          'flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2',
+          selected === 'USDT' 
+            ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+            : 'text-zinc-400 hover:text-zinc-200',
+        )}
+      >
+        <span className="w-2 h-2 rounded-full bg-green-500" />
+        USDT
+      </button>
+    </div>
+  );
 }
 
 // ─── Portfolio Tab ─────────────────────────────────────────────────────────────
 
-function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWithdraw: () => void }) {
-  const { vaultState, userState, isConnected } = useVaultData();
+function PortfolioTab({ onDeposit, onWithdraw, selectedAsset, onAssetChange }: { 
+  onDeposit: () => void; 
+  onWithdraw: () => void;
+  selectedAsset: AssetType;
+  onAssetChange: (asset: AssetType) => void;
+}) {
+  const { 
+    usdcVaultState, usdtVaultState, 
+    usdcUserState, usdtUserState,
+    totalTVL, userTotalPosition, 
+    isConnected 
+  } = useDualVaultData();
   const { history, loading: histLoading } = useVaultHistory();
   const { marketData, regime } = useLiquidityStore();
   const { t } = useI18n();
 
+  // Current vault based on selection
+  const vaultState = selectedAsset === 'USDC' ? usdcVaultState : usdtVaultState;
+  const userState = selectedAsset === 'USDC' ? usdcUserState : usdtUserState;
+  const vaultAddress = selectedAsset === 'USDC' ? VAULT_USDC_ADDRESS : VAULT_USDT_ADDRESS;
+
   const userUsd = userState ? parseFloat(userState.assetsValueUsd) : 0;
-  const totalAssets = vaultState ? parseFloat(vaultState.totalAssetsUsd) : 0;
+  const vaultAssets = vaultState ? parseFloat(vaultState.totalAssetsUsd) : 0;
   const sharePrice = vaultState ? parseFloat(vaultState.sharePriceUsd) : 1;
-  const isLive = vaultState && !vaultState.paused && VAULT_ADDRESS;
+  const isLive = vaultState && !vaultState.paused && vaultAddress;
 
   const regimeColor = {
     trend: 'text-cyan-400',
@@ -78,6 +176,12 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
     'low-vol': 'text-emerald-400',
     range: 'text-amber-400',
   }[regime?.type ?? 'range'] ?? 'text-zinc-400';
+
+  // TVL distribution
+  const usdcTVL = usdcVaultState ? parseFloat(usdcVaultState.totalAssetsUsd) : 0;
+  const usdtTVL = usdtVaultState ? parseFloat(usdtVaultState.totalAssetsUsd) : 0;
+  const usdcShare = totalTVL > 0 ? (usdcTVL / totalTVL * 100) : 50;
+  const usdtShare = 100 - usdcShare;
 
   return (
     <div className="flex flex-col gap-4 p-4 pb-6">
@@ -93,9 +197,9 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
           </div>
           <div className="flex flex-col gap-2 mb-3">
             {[
-              { icon: Wallet, color: 'text-emerald-400', text: 'Deposite USDC no vault' },
+              { icon: Wallet, color: 'text-emerald-400', text: 'Deposite USDC ou USDT no vault' },
               { icon: Brain,  color: 'text-cyan-400',    text: 'IA rebalanceia a cada 15 min na Uniswap V3' },
-              { icon: TrendingUp, color: 'text-violet-400', text: 'Retire USDC + rendimento a qualquer hora' },
+              { icon: TrendingUp, color: 'text-violet-400', text: 'Retire com rendimento a qualquer hora' },
             ].map(({ icon: Icon, color, text }) => (
               <div key={text} className="flex items-center gap-2 text-xs text-zinc-300">
                 <Icon className={cn('h-3.5 w-3.5 shrink-0', color)} />
@@ -110,22 +214,57 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
         </div>
       )}
 
-      {/* Hero — My Position */}
+      {/* Combined TVL Card */}
       <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 to-cyan-500/10 border border-emerald-500/20 p-5">
         <div className="flex items-center gap-2 mb-1">
-          <p className="text-sm text-zinc-400">{t('portfolio.myPosition')}</p>
-          <CardInfo tip={t('portfolio.tip')} />
+          <Coins className="h-4 w-4 text-emerald-400" />
+          <p className="text-sm text-zinc-400">Total Value Locked (Both Vaults)</p>
         </div>
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-4xl font-bold tracking-tight">
-              ${userUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        <p className="text-4xl font-bold tracking-tight">
+          ${totalTVL.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+        </p>
+        
+        {/* TVL Distribution Bar */}
+        <div className="mt-3 space-y-2">
+          <div className="flex h-2 rounded-full overflow-hidden bg-muted">
+            <div className="bg-blue-500 transition-all duration-500" style={{ width: `${usdcShare}%` }} />
+            <div className="bg-green-500 transition-all duration-500" style={{ width: `${usdtShare}%` }} />
+          </div>
+          <div className="flex justify-between text-xs text-zinc-500">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              USDC: ${usdcTVL.toLocaleString('en-US', { maximumFractionDigits: 0 })} ({usdcShare.toFixed(0)}%)
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              USDT: ${usdtTVL.toLocaleString('en-US', { maximumFractionDigits: 0 })} ({usdtShare.toFixed(0)}%)
+            </span>
+          </div>
+        </div>
+
+        {/* User Total Position */}
+        {isConnected && userTotalPosition > 0 && (
+          <div className="mt-3 pt-3 border-t border-white/5">
+            <p className="text-xs text-zinc-500">Your Total Position</p>
+            <p className="text-xl font-bold text-emerald-400">
+              ${userTotalPosition.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-            <p className="text-xs text-zinc-500 mt-1">
-              {userState && userState.shares > 0n
-                ? `${parseFloat(formatUnits(userState.shares, 18)).toFixed(4)} ${t('portfolio.vaiShares')}`
-                : isConnected ? t('portfolio.noPosition') : t('portfolio.connectWallet')}
-            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Vault Selector */}
+      <VaultSelector selected={selectedAsset} onChange={onAssetChange} />
+
+      {/* Selected Vault Info */}
+      <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              'w-3 h-3 rounded-full',
+              selectedAsset === 'USDC' ? 'bg-blue-500' : 'bg-green-500'
+            )} />
+            <p className="text-sm font-medium text-zinc-200">{selectedAsset} Vault</p>
           </div>
           <span className={cn(
             'text-xs px-2.5 py-1 rounded-full font-medium border',
@@ -133,13 +272,43 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
               ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
               : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
           )}>
-            {isLive ? '● Live' : VAULT_ADDRESS ? '⏸ Paused' : '— Not Deployed'}
+            {isLive ? '● Live' : vaultAddress ? '⏸ Paused' : '— Not Deployed'}
           </span>
         </div>
-        <div className="mt-3 pt-3 border-t border-white/5 flex gap-4 text-xs text-zinc-500">
-          <span>TVL <span className="text-zinc-200">${totalAssets.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></span>
-          <span>Share <span className="text-zinc-200">${sharePrice.toFixed(4)}</span></span>
-          <span>Rede <span className="text-amber-400">{NETWORK_LABEL}</span></span>
+        
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-xs text-zinc-500">TVL</p>
+            <p className="font-bold text-lg">${vaultAssets.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+          </div>
+          <div>
+            <p className="text-xs text-zinc-500">Share Price</p>
+            <p className="font-bold text-lg">${sharePrice.toFixed(4)}</p>
+          </div>
+          {isConnected && (
+            <>
+              <div>
+                <p className="text-xs text-zinc-500">Your Position</p>
+                <p className="font-bold text-lg">${userUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500">vAI Shares</p>
+                <p className="font-bold text-lg">{userState && userState.shares > 0n ? parseFloat(formatUnits(userState.shares, 18)).toFixed(4) : '0.0000'}</p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Vault Address Link */}
+        <div className="mt-3 pt-3 border-t border-zinc-800">
+          <a 
+            href={`${EXPLORER}/address/${vaultAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-zinc-500 hover:text-emerald-400 transition-colors font-mono"
+          >
+            {vaultAddress?.slice(0, 6)}…{vaultAddress?.slice(-4)} ↗
+          </a>
         </div>
       </div>
 
@@ -234,7 +403,15 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
 
 // ─── Invest Tab ────────────────────────────────────────────────────────────────
 
-function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
+function InvestTab({ 
+  initialMode, 
+  selectedAsset, 
+  onAssetChange 
+}: { 
+  initialMode: 'deposit' | 'withdraw';
+  selectedAsset: AssetType;
+  onAssetChange: (asset: AssetType) => void;
+}) {
   const [mode, setMode] = useState<'deposit' | 'withdraw'>(initialMode);
   const [depositAmt, setDepositAmt] = useState('');
   const [withdrawAmt, setWithdrawAmt] = useState('');
@@ -244,12 +421,18 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
-  const { vaultState, userState, refresh } = useVaultData();
+  const { usdcVaultState, usdtVaultState, usdcUserState, usdtUserState, refresh } = useDualVaultData();
   const { history } = useVaultHistory();
   const { toast } = useToast();
   const { t } = useI18n();
 
-  const usdcBal = userState ? parseFloat(formatUnits(userState.stablecoinBalance, 6)) : 0;
+  // Current vault based on selection
+  const vaultState = selectedAsset === 'USDC' ? usdcVaultState : usdtVaultState;
+  const userState = selectedAsset === 'USDC' ? usdcUserState : usdtUserState;
+  const vaultAddress = selectedAsset === 'USDC' ? VAULT_USDC_ADDRESS : VAULT_USDT_ADDRESS;
+  const assetAddress = selectedAsset === 'USDC' ? USDC_ARBITRUM_ONE : USDT_ARBITRUM_ONE;
+
+  const walletBal = userState ? parseFloat(formatUnits(userState.stablecoinBalance, 6)) : 0;
   const userUsd = userState ? parseFloat(userState.assetsValueUsd) : 0;
   const vaiShares = userState ? parseFloat(formatUnits(userState.shares, 18)) : 0;
 
@@ -263,15 +446,15 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
     }
     setBusy(true); setTxHash(null);
     try {
-      toast({ title: 'Passo 1/2 — Aprovar USDC', description: 'Confirma na carteira…' });
-      const approveTx = await approveStablecoin(walletClient, address, depositAmt, USDC_ARBITRUM_ONE);
+      toast({ title: `Passo 1/2 — Aprovar ${selectedAsset}`, description: 'Confirma na carteira…' });
+      const approveTx = await approveStablecoin(walletClient, address, depositAmt, assetAddress, vaultAddress);
       await publicClient.waitForTransactionReceipt({ hash: approveTx });
       toast({ title: 'Passo 2/2 — Depositar', description: 'Confirma na carteira…' });
-      const depTx = await depositToVault(walletClient, address, depositAmt);
+      const depTx = await depositToVault(walletClient, address, depositAmt, vaultAddress);
       await publicClient.waitForTransactionReceipt({ hash: depTx });
       setTxHash(depTx); setDepositAmt('');
       await refresh();
-      toast({ title: 'Depósito confirmado!', description: `$${amt.toLocaleString()} depositados. Recebeste vAI shares.` });
+      toast({ title: 'Depósito confirmado!', description: `$${amt.toLocaleString()} ${selectedAsset} depositados. Recebeste vAI shares.` });
     } catch (err) {
       toast({ title: 'Depósito falhou', description: (err instanceof Error ? err.message : 'Erro').slice(0, 100), variant: 'destructive' });
     } finally { setBusy(false); }
@@ -292,11 +475,11 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
     setBusy(true); setTxHash(null);
     try {
       toast({ title: 'A resgatar vAI shares…', description: 'Confirma na carteira…' });
-      const tx = await redeemFromVault(walletClient, address, shares);
+      const tx = await redeemFromVault(walletClient, address, shares, vaultAddress);
       await publicClient.waitForTransactionReceipt({ hash: tx });
       setTxHash(tx); setWithdrawAmt('');
       await refresh();
-      toast({ title: 'Saque confirmado!', description: 'USDC devolvido à carteira.' });
+      toast({ title: 'Saque confirmado!', description: `${selectedAsset} devolvido à carteira.` });
     } catch (err) {
       toast({ title: 'Saque falhou', description: (err instanceof Error ? err.message : 'Erro').slice(0, 100), variant: 'destructive' });
     } finally { setBusy(false); }
@@ -308,14 +491,17 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
       {/* Saldos */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-          <p className="text-xs text-zinc-500 mb-1">Carteira USDC</p>
-          <p className="text-2xl font-bold">${usdcBal.toFixed(2)}</p>
+          <p className="text-xs text-zinc-500 mb-1">Carteira {selectedAsset}</p>
+          <p className="text-2xl font-bold">${walletBal.toFixed(2)}</p>
         </div>
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-          <p className="text-xs text-zinc-500 mb-1">Posição</p>
+          <p className="text-xs text-zinc-500 mb-1">Posição {selectedAsset}</p>
           <p className="text-2xl font-bold">${userUsd.toFixed(2)}</p>
         </div>
       </div>
+
+      {/* Vault Selector */}
+      <VaultSelector selected={selectedAsset} onChange={onAssetChange} />
 
       {/* Mode toggle */}
       <div className="flex rounded-xl bg-zinc-900 border border-zinc-800 p-1 gap-1">
@@ -358,12 +544,12 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
               <button
-                onClick={() => setDepositAmt(usdcBal.toFixed(6))}
+                onClick={() => setDepositAmt(walletBal.toFixed(6))}
                 className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg"
               >
                 MAX
               </button>
-              <span className="text-sm text-zinc-500">USDC</span>
+              <span className="text-sm text-zinc-500">{selectedAsset}</span>
             </div>
           </div>
           <button
@@ -371,7 +557,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
             disabled={busy || vaultState?.paused}
             className="h-14 w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-bold text-lg transition-colors active:scale-95 flex items-center justify-center gap-2"
           >
-            {busy ? <><RefreshCw className="h-5 w-5 animate-spin" /> A processar…</> : <>Depositar USDC <ChevronRight className="h-5 w-5" /></>}
+            {busy ? <><RefreshCw className="h-5 w-5 animate-spin" /> A processar…</> : <>Depositar {selectedAsset} <ChevronRight className="h-5 w-5" /></>}
           </button>
           {txHash && (
             <a href={`${EXPLORER}/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
@@ -404,7 +590,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
           </div>
           {vaiShares > 0 && (
             <p className="text-xs text-zinc-500 text-center">
-              Tens <span className="text-zinc-200">{vaiShares.toFixed(4)} vAI</span> shares (≈ ${userUsd.toFixed(2)} USDC)
+              Tens <span className="text-zinc-200">{vaiShares.toFixed(4)} vAI</span> shares (≈ ${userUsd.toFixed(2)} {selectedAsset})
             </p>
           )}
           <button
@@ -412,7 +598,7 @@ function InvestTab({ initialMode }: { initialMode: 'deposit' | 'withdraw' }) {
             disabled={busy || vaultState?.paused}
             className="h-14 w-full rounded-xl bg-rose-500 hover:bg-rose-400 disabled:opacity-50 text-white font-bold text-lg transition-colors active:scale-95 flex items-center justify-center gap-2"
           >
-            {busy ? <><RefreshCw className="h-5 w-5 animate-spin" /> A processar…</> : <>Sacar USDC <ChevronRight className="h-5 w-5" /></>}
+            {busy ? <><RefreshCw className="h-5 w-5 animate-spin" /> A processar…</> : <>Sacar {selectedAsset} <ChevronRight className="h-5 w-5" /></>}
           </button>
           {txHash && (
             <a href={`${EXPLORER}/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
@@ -494,7 +680,7 @@ function MarketTab() {
       <div className="rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800 p-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs text-zinc-500 mb-1">ETH / USDC</p>
+            <p className="text-xs text-zinc-500 mb-1">ETH / USD</p>
             <p className="text-4xl font-bold">${marketData.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}</p>
             <p className="text-xs text-zinc-500 mt-1">Pool 0.05% · {NETWORK_LABEL}</p>
           </div>
@@ -654,7 +840,7 @@ function MarketTab() {
 // ─── System Tab ────────────────────────────────────────────────────────────────
 
 function SystemTab() {
-  const { vaultState } = useVaultData();
+  const { usdcVaultState, usdtVaultState, totalTVL } = useDualVaultData();
   const { systemStatus, metrics, riskMetrics, recentExecutions } = useLiquidityStore();
   const { t } = useI18n();
   const [keeper, setKeeper] = useState<{ last_run?: string; status?: string; next_run_in_seconds?: number } | null>(null);
@@ -664,8 +850,6 @@ function SystemTab() {
     if (!AI_URL) return;
     fetch(`${AI_URL}/keeper/status`).then(r => r.json()).then(setKeeper).catch(() => {});
   }, []);
-
-  const isLive = vaultState && !vaultState.paused && VAULT_ADDRESS;
 
   const statusDot = (ok: boolean) => (
     <span className={cn('inline-block w-2 h-2 rounded-full', ok ? 'bg-emerald-400' : 'bg-zinc-600')} />
@@ -684,8 +868,8 @@ function SystemTab() {
       {/* KPI cards — as quatro métricas principais */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-          <div className="flex items-center gap-1 mb-1"><p className="text-xs text-zinc-500">{t('system.tvl')}</p><CardInfo tip="Total Value Locked — total USDC depositado no vault por todos os investidores." /></div>
-          <p className="text-2xl font-bold">${metrics.totalTVL.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+          <div className="flex items-center gap-1 mb-1"><p className="text-xs text-zinc-500">{t('system.tvl')}</p><CardInfo tip="Total Value Locked — total USDC + USDT depositado nos vaults." /></div>
+          <p className="text-2xl font-bold">${totalTVL.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
         </div>
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
           <div className="flex items-center gap-1 mb-1"><p className="text-xs text-zinc-500">{t('system.fees24h')}</p><CardInfo tip={t('metrics.volume24h.tip')} /></div>
@@ -696,10 +880,46 @@ function SystemTab() {
           <p className="text-2xl font-bold">{(metrics.avgAPY * 100).toFixed(1)}%</p>
         </div>
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-          <div className="flex items-center gap-1 mb-1"><p className="text-xs text-zinc-500">{t('system.health')}</p><CardInfo tip="Score de saúde geral do sistema: considera vault ativo, serviços online e posições em range." /></div>
+          <div className="flex items-center gap-1 mb-1"><p className="text-xs text-zinc-500">{t('system.health')}</p><CardInfo tip="Score de saúde geral do sistema: considera vaults ativos, serviços online e posições em range." /></div>
           <p className="text-2xl font-bold">{metrics.systemHealth.toFixed(0)}%</p>
           <div className="mt-1.5 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full" style={{ width: `${metrics.systemHealth}%` }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Dual Vault Status */}
+      <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Coins className="h-4 w-4 text-violet-400" />
+          <p className="text-sm font-medium text-zinc-200">Vault Status</p>
+        </div>
+        <div className="space-y-3">
+          {/* USDC Vault */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="text-zinc-400">USDC Vault</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {statusDot(!!usdcVaultState && !usdcVaultState.paused)}
+              <span className={usdcVaultState && !usdcVaultState.paused ? 'text-emerald-400' : 'text-zinc-500'}>
+                {usdcVaultState ? (usdcVaultState.paused ? 'Paused' : 'Live') : 'Offline'}
+              </span>
+            </div>
+          </div>
+          {/* USDT Vault */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-zinc-400">USDT Vault</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {statusDot(!!usdtVaultState && !usdtVaultState.paused)}
+              <span className={usdtVaultState && !usdtVaultState.paused ? 'text-emerald-400' : 'text-zinc-500'}>
+                {usdtVaultState ? (usdtVaultState.paused ? 'Paused' : 'Live') : 'Offline'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -713,7 +933,6 @@ function SystemTab() {
         </div>
         <div className="space-y-2 text-sm">
           {[
-            { label: 'Vault',               ok: !!isLive                             },
             { label: 'IA Engine',           ok: systemStatus?.aiEngineReady ?? false  },
             { label: 'Strategy Controller', ok: systemStatus?.strategyControllerActive ?? false },
             { label: 'Data Indexer',        ok: systemStatus?.dataIndexerSynced ?? false },
@@ -730,32 +949,6 @@ function SystemTab() {
         </div>
       </div>
 
-      {/* Vault ERC-4626 */}
-      {vaultState && (
-        <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Shield className="h-4 w-4 text-amber-400" />
-            <p className="text-sm font-medium text-zinc-200">Vault ERC-4626</p>
-          </div>
-          <div className="space-y-2 text-sm">
-            {[
-              { label: 'Total Assets', value: `$${parseFloat(vaultState.totalAssetsUsd).toLocaleString('en-US', { maximumFractionDigits: 2 })}` },
-              { label: 'Total Supply', value: `${parseFloat(formatUnits(vaultState.totalSupply, 18)).toFixed(4)} vAI` },
-              { label: 'Share Price',  value: `$${vaultState.sharePriceUsd}` },
-              { label: 'Deployed Capital', value: `$${parseFloat(formatUnits(vaultState.deployedCapital, 6)).toFixed(2)}` },
-              { label: 'Posições LP Activas', value: vaultState.activePositions.toString() },
-              { label: 'Taxa Gestão', value: `${Number(vaultState.managementFeeBps) / 100}%` },
-              { label: 'Taxa Performance', value: `${Number(vaultState.performanceFeeBps) / 100}%` },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex justify-between">
-                <span className="text-zinc-500">{label}</span>
-                <span>{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Risk Metrics */}
       <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
         <div className="flex items-center gap-2 mb-3">
@@ -764,164 +957,116 @@ function SystemTab() {
           <CardInfo tip="Métricas de risco calculadas com base na volatilidade atual e no histórico de posições do vault." />
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          {[
-            { labelKey: 'metrics.impermanentLoss.label', tipKey: 'metrics.impermanentLoss.tip', value: `${(riskMetrics.impermanentLoss * 100).toFixed(2)}%` },
-            { labelKey: 'metrics.maxDrawdown.label',     tipKey: 'metrics.maxDrawdown.tip',     value: `${(riskMetrics.maxDrawdown * 100).toFixed(2)}%`     },
-            { labelKey: 'metrics.var95.label',           tipKey: 'metrics.var95.tip',           value: `${(riskMetrics.var95 * 100).toFixed(2)}%`           },
-            { labelKey: 'metrics.sharpe.label',          tipKey: 'metrics.sharpe.tip',          value: riskMetrics.sharpeRatio.toFixed(2)                   },
-            { labelKey: 'metrics.sortino.label',         tipKey: 'metrics.sortino.tip',         value: riskMetrics.sortinoRatio.toFixed(2)                  },
-            { labelKey: 'metrics.calmar.label',          tipKey: 'metrics.calmar.tip',          value: riskMetrics.calmarRatio.toFixed(2)                   },
-          ].map(({ labelKey, tipKey, value }) => (
-            <div key={labelKey}>
-              <div className="flex items-center gap-1 mb-0.5"><p className="text-xs text-zinc-500">{t(labelKey)}</p><CardInfo tip={t(tipKey)} /></div>
-              <p className="font-semibold">{value}</p>
-            </div>
-          ))}
+          <div><p className="text-xs text-zinc-500">{t('metrics.impermanentLoss.label')}</p><p className="font-semibold">{(riskMetrics.impermanentLoss * 100).toFixed(2)}%</p></div>
+          <div><p className="text-xs text-zinc-500">{t('metrics.maxDrawdown.label')}</p><p className="font-semibold">{(riskMetrics.maxDrawdown * 100).toFixed(2)}%</p></div>
+          <div><p className="text-xs text-zinc-500">{t('metrics.sharpeRatio.label')}</p><p className="font-semibold">{riskMetrics.sharpeRatio.toFixed(2)}</p></div>
+          <div><p className="text-xs text-zinc-500">{t('metrics.sortinoRatio.label')}</p><p className="font-semibold">{riskMetrics.sortinoRatio.toFixed(2)}</p></div>
         </div>
       </div>
 
-      {/* Keeper Bot */}
-      <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Zap className="h-4 w-4 text-cyan-400" />
-          <p className="text-sm font-medium text-zinc-200">Keeper Bot</p>
-        </div>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-zinc-500">Estado</span>
-            <span className={keeper?.status === 'idle' ? 'text-zinc-400' : 'text-emerald-400'}>{keeper?.status ?? '—'}</span>
+      {/* Keeper Status */}
+      {keeper && (
+        <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="h-4 w-4 text-cyan-400" />
+            <p className="text-sm font-medium text-zinc-200">Keeper Scheduler</p>
           </div>
-          <div className="flex justify-between">
-            <span className="text-zinc-500">Última execução</span>
-            <span className="text-zinc-400 text-xs">{keeper?.last_run ? new Date(keeper.last_run).toLocaleTimeString() : '—'}</span>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div><p className="text-xs text-zinc-500">Status</p><p className={cn('font-semibold', keeper.status === 'running' ? 'text-emerald-400' : 'text-zinc-400')}>{keeper.status ?? 'unknown'}</p></div>
+            <div><p className="text-xs text-zinc-500">Next Run</p><p className="font-semibold">{keeper.next_run_in_seconds ? `${Math.round(keeper.next_run_in_seconds / 60)}min` : '—'}</p></div>
           </div>
-          {keeper?.next_run_in_seconds != null && (
-            <div className="flex justify-between">
-              <span className="text-zinc-500">Próxima em</span>
-              <span className="text-amber-400 text-xs">{keeper.next_run_in_seconds}s</span>
-            </div>
-          )}
         </div>
-      </div>
+      )}
 
-      {/* Histórico de Execuções */}
-      <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800">
-          <Activity className="h-4 w-4 text-zinc-400" />
-          <p className="text-sm font-medium text-zinc-200">Histórico de Execuções</p>
-        </div>
-        {recentExecutions.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-zinc-500">Nenhuma execução registada</p>
-        ) : (
+      {/* Recent Executions */}
+      {recentExecutions.length > 0 && (
+        <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
+          <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-amber-400" />
+            <p className="text-sm font-medium text-zinc-200">{t('system.recentExecutions')}</p>
+          </div>
           <div className="divide-y divide-zinc-800">
-            {recentExecutions.slice(0, 10).map(exec => (
-              <div key={exec.id} className="px-4 py-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium uppercase tracking-wide text-zinc-300">{exec.type}</span>
-                  <span className={cn('text-xs font-medium', execStatusColor[exec.status] ?? 'text-zinc-400')}>{exec.status}</span>
+            {recentExecutions.slice(0, 5).map((exec, i) => (
+              <div key={i} className="px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{exec.action}</p>
+                  <p className="text-[10px] text-zinc-500">{new Date(exec.timestamp).toLocaleString()}</p>
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-zinc-500">
-                  <span>{new Date(exec.timestamp).toLocaleTimeString()}</span>
-                  {exec.txHash && (
-                    <a href={`${EXPLORER}/tx/${exec.txHash}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300">
-                      <ExternalLink className="h-3 w-3" /> {exec.txHash.slice(0, 8)}…
-                    </a>
-                  )}
-                  {exec.gasUsed && <span>Gas: {exec.gasUsed.toLocaleString()}</span>}
-                </div>
-                {exec.error && <p className="text-[10px] text-rose-400 mt-1">{exec.error}</p>}
+                <span className={cn('text-xs font-medium', execStatusColor[exec.status])}>{exec.status}</span>
               </div>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* Links */}
-      <div className="rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden">
-        {VAULT_ADDRESS && (
-          <a href={`${EXPLORER}/address/${VAULT_ADDRESS}`} target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-800 active:bg-zinc-800/50">
-            <div className="flex items-center gap-3">
-              <Shield className="h-4 w-4 text-amber-400" />
-              <span className="text-sm">Ver Vault no Explorer</span>
-            </div>
-            <ExternalLink className="h-4 w-4 text-zinc-500" />
-          </a>
-        )}
-        <a href="/admin" className="flex items-center justify-between px-4 py-3.5 active:bg-zinc-800/50">
-          <div className="flex items-center gap-3">
-            <Settings className="h-4 w-4 text-zinc-400" />
-            <span className="text-sm">Painel de Admin</span>
-          </div>
-          <ChevronRight className="h-4 w-4 text-zinc-500" />
-        </a>
-      </div>
-
-      <p className="text-center text-[10px] text-zinc-600">
-        {NETWORK_LABEL} · Vault {VAULT_ADDRESS ? `${VAULT_ADDRESS.slice(0, 6)}…${VAULT_ADDRESS.slice(-4)}` : 'não configurado'}
-      </p>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Bottom Navigation ─────────────────────────────────────────────────────────
-
-const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'portfolio', label: 'Portfolio', icon: Home       },
-  { id: 'invest',    label: 'Investir',  icon: Wallet     },
-  { id: 'market',    label: 'Mercado',   icon: LineChart  },
-  { id: 'system',    label: 'Sistema',   icon: Settings   },
-];
-
-// ─── Root Mobile Dashboard ─────────────────────────────────────────────────────
+// ─── Main Mobile Dashboard ─────────────────────────────────────────────────────
 
 export function MobileDashboard() {
-  const [tab, setTab] = useState<Tab>('portfolio');
+  const [activeTab, setActiveTab] = useState<Tab>('portfolio');
   const [investMode, setInvestMode] = useState<'deposit' | 'withdraw'>('deposit');
-  const { t } = useI18n();
-
-  const goDeposit = () => { setInvestMode('deposit'); setTab('invest'); };
-  const goWithdraw = () => { setInvestMode('withdraw'); setTab('invest'); };
+  const [selectedAsset, setSelectedAsset] = useState<AssetType>('USDC');
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-background overflow-hidden">
-
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/60 bg-zinc-950/80 backdrop-blur-md shrink-0 z-40">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500">
-            <Droplets className="h-4 w-4 text-white" />
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500">
+              <Droplets className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-bold text-lg">AI Liquidity</span>
           </div>
-          <span className="font-bold text-sm">AI Liquidity</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher />
-          <WalletConnect />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <WalletConnect />
+          </div>
         </div>
       </header>
 
-      {/* Tab content — scrollable */}
-      <main className="flex-1 overflow-y-auto">
-        {tab === 'portfolio' && <PortfolioTab onDeposit={goDeposit} onWithdraw={goWithdraw} />}
-        {tab === 'invest'    && <InvestTab initialMode={investMode} key={investMode} />}
-        {tab === 'market'    && <MarketTab />}
-        {tab === 'system'    && <SystemTab />}
+      {/* Content */}
+      <main className="flex-1 overflow-y-auto pb-20">
+        {activeTab === 'portfolio' && (
+          <PortfolioTab 
+            onDeposit={() => { setInvestMode('deposit'); setActiveTab('invest'); }}
+            onWithdraw={() => { setInvestMode('withdraw'); setActiveTab('invest'); }}
+            selectedAsset={selectedAsset}
+            onAssetChange={setSelectedAsset}
+          />
+        )}
+        {activeTab === 'invest' && (
+          <InvestTab 
+            initialMode={investMode} 
+            selectedAsset={selectedAsset}
+            onAssetChange={setSelectedAsset}
+          />
+        )}
+        {activeTab === 'market' && <MarketTab />}
+        {activeTab === 'system' && <SystemTab />}
       </main>
 
-      {/* Bottom Nav */}
-      <nav className="shrink-0 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-md safe-area-pb z-40">
-        <div className="flex items-stretch">
-          {TABS.map(({ id, icon: Icon }) => (
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/90 backdrop-blur-xl border-t border-border/50 z-50">
+        <div className="grid grid-cols-4 h-16">
+          {[
+            { id: 'portfolio' as Tab, icon: Wallet, label: 'Portfolio' },
+            { id: 'invest' as Tab,    icon: Coins,  label: 'Invest' },
+            { id: 'market' as Tab,    icon: LineChart, label: 'Market' },
+            { id: 'system' as Tab,    icon: Settings, label: 'System' },
+          ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
-              onClick={() => setTab(id)}
+              onClick={() => setActiveTab(id)}
               className={cn(
-                'flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-h-[60px] transition-colors',
-                tab === id ? 'text-emerald-400' : 'text-zinc-500 active:text-zinc-300',
+                'flex flex-col items-center justify-center gap-1 transition-colors',
+                activeTab === id ? 'text-emerald-400' : 'text-zinc-500 hover:text-zinc-300',
               )}
             >
-              <Icon className={cn('h-5 w-5', tab === id && 'drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]')} />
-              <span className="text-[10px] font-medium leading-none">{t(`tabs.${id}`)}</span>
+              <Icon className="h-5 w-5" />
+              <span className="text-[10px] font-medium">{label}</span>
             </button>
           ))}
         </div>
