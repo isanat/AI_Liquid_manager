@@ -1,0 +1,208 @@
+{
+  "tabs": {
+    "portfolio": "Portfolio",
+    "invest": "Invest",
+    "market": "Market",
+    "system": "System"
+  },
+  "nav": {
+    "connectWallet": "Connect Wallet",
+    "admin": "Admin",
+    "language": "Language"
+  },
+  "portfolio": {
+    "myPosition": "My Position",
+    "noPosition": "No active position",
+    "connectWallet": "Connect your wallet",
+    "vaiShares": "vAI shares",
+    "deposit": "Deposit",
+    "withdraw": "Withdraw",
+    "recentTransactions": "Recent Transactions",
+    "noTransactions": "No transactions yet",
+    "marketSummary": "Market Summary",
+    "tip": "Shows the current value of your position in the ERC-4626 vault. Calculated as: your shares × share price. The share price increases as the vault generates fees."
+  },
+  "invest": {
+    "depositMode": "Deposit",
+    "withdrawMode": "Withdraw",
+    "depositLabel": "USDC Amount",
+    "withdrawLabel": "vAI Shares",
+    "maxButton": "MAX",
+    "confirmDeposit": "Confirm Deposit",
+    "confirmWithdraw": "Confirm Withdrawal",
+    "fullHistory": "Full History",
+    "tip": "Deposit USDC to receive vAI shares. The vault uses the funds to provide liquidity on Uniswap V3, generating trading fees that are shared proportionally with investors."
+  },
+  "market": {
+    "ethUsdc": "ETH / USDC",
+    "pool": "Pool 0.05%",
+    "refresh": "Refresh",
+    "twap": "TWAP",
+    "tick": "Tick",
+    "vol1h": "Vol 1h",
+    "volume24h": "Volume 24h",
+    "volatility1d": "Volatility 1D",
+    "volatility7d": "Volatility 7D",
+    "atr": "ATR",
+    "stdDev": "Std Deviation",
+    "liquidity": "Pool Liquidity",
+    "aiRegime": "AI Regime",
+    "confidence": "Confidence",
+    "rangeWidth": "Range Width",
+    "rebalanceThreshold": "Rebalance Threshold",
+    "trend": "Trend",
+    "capitalAllocation": "Capital Allocation",
+    "rangeConfigs": "Range Configurations",
+    "aiInputs": "AI Inputs",
+    "tip": "Real-time market data from the ETH/USDC 0.05% pool on Uniswap V3. Source: The Graph subgraph or CoinGecko as fallback."
+  },
+  "system": {
+    "tvl": "TVL",
+    "fees24h": "Fees 24h",
+    "estApy": "Est. APY",
+    "health": "Health",
+    "services": "Services",
+    "vaultDetails": "ERC-4626 Vault",
+    "riskMetrics": "Risk Metrics",
+    "keeperBot": "Keeper Bot",
+    "executionHistory": "Execution History",
+    "links": "Links",
+    "tip": "Overall system status: on-chain vault, AI services, risk metrics and automated operations history."
+  },
+  "metrics": {
+    "price": {
+      "label": "Price",
+      "tip": "Current spot price of ETH in USDC on the Uniswap V3 0.05% pool. Updated in real-time from on-chain data."
+    },
+    "tick": {
+      "label": "Tick",
+      "tip": "Current tick in Uniswap V3's discrete price system. Each tick represents a 0.01% price increment (log₁.₀₀₀₁ of price). The current tick determines which liquidity ranges the price falls within."
+    },
+    "twap": {
+      "label": "TWAP",
+      "tip": "Time-Weighted Average Price — a time-weighted average that is resistant to manipulation. Calculated from recent on-chain observations. Used as a safe price reference by the AI system."
+    },
+    "liquidity": {
+      "label": "Liquidity",
+      "tip": "Total liquidity available in the pool around the current price. Higher value means less slippage for traders and more fees generated for liquidity providers."
+    },
+    "volume24h": {
+      "label": "Volume 24h",
+      "tip": "Trading volume in the last 24 hours on the ETH/USDC 0.05% pool. High volume generates more fees for the vault. Data from The Graph (Uniswap V3 subgraph)."
+    },
+    "volatility1d": {
+      "label": "Volatility 1D",
+      "tip": "1-day realized volatility, calculated from hourly logarithmic returns of real OHLC data. The AI uses this value to determine the ideal liquidity range width."
+    },
+    "atr": {
+      "label": "ATR",
+      "tip": "Average True Range — measures market volatility by the average price movement. Calculated as: price × 1D volatility. Used by the AI to calibrate rebalancing thresholds."
+    },
+    "stdDev": {
+      "label": "Std Deviation",
+      "tip": "Standard deviation of price returns. High values indicate a more volatile market. The AI uses this value to adjust range widths and allocation between strategies (Core/Defensive/Opportunistic)."
+    },
+    "impermanentLoss": {
+      "label": "IL (Impermanent Loss)",
+      "tip": "Estimated impermanent loss of the current position compared to simply holding the tokens. It is a temporary loss that occurs when the price moves away from the entry price. The AI tries to minimize IL through rebalancing."
+    },
+    "maxDrawdown": {
+      "label": "Max Drawdown",
+      "tip": "Largest percentage drop in vault value from the historical peak. A downside risk indicator. Lower value is better."
+    },
+    "var95": {
+      "label": "VaR 95%",
+      "tip": "Value at Risk at 95% confidence — maximum expected loss under normal market conditions (5% probability of exceeding this value). Calculated based on current volatility."
+    },
+    "sharpe": {
+      "label": "Sharpe Ratio",
+      "tip": "Risk-adjusted return. Calculated as (return - risk-free rate) / standard deviation. Sharpe > 1 is good, > 2 is excellent. Measures how much extra return you get per unit of risk."
+    },
+    "sortino": {
+      "label": "Sortino Ratio",
+      "tip": "Similar to Sharpe, but only penalizes downside volatility. More relevant for investors primarily concerned with losses. Sortino > 1 is good."
+    },
+    "calmar": {
+      "label": "Calmar Ratio",
+      "tip": "Annualized return divided by Max Drawdown. Measures return efficiency relative to the worst historical scenario. Calmar > 1 is considered good."
+    }
+  },
+  "dataSource": {
+    "theGraph": "● The Graph",
+    "coinGecko": "⚠ CoinGecko",
+    "fallback": "✕ Fallback",
+    "loading": "○ Loading…"
+  },
+  "status": {
+    "live": "Live",
+    "paused": "Paused",
+    "online": "Online",
+    "offline": "Offline",
+    "synced": "Synced",
+    "ready": "Ready"
+  },
+  "actions": {
+    "refresh": "Refresh",
+    "approve": "Approve USDC",
+    "confirm": "Confirm",
+    "viewExplorer": "View on Explorer",
+    "adminPanel": "Admin Panel"
+  },
+  "errors": {
+    "connectWallet": "Please connect your wallet first",
+    "insufficientBalance": "Insufficient balance",
+    "transactionFailed": "Transaction failed"
+  },
+  "aiStrategy": {
+    "card": "LightGBM-powered AI model that analyzes real-time market data to generate optimal liquidity range parameters.",
+    "volatility1d": "1-day realized volatility fed into the LightGBM model. Higher values widen the recommended range to reduce rebalancing frequency.",
+    "volatility7d": "7-day realized volatility. Provides a longer horizon view to detect sustained trends and calibrate range recommendations.",
+    "volumeScore": "Normalized trading volume score (0–100%). High volume suggests more fee income potential, which may justify narrower, higher-concentration ranges.",
+    "liquidityDepth": "Pool liquidity depth around the current price. Low depth means higher price impact per trade, pushing the model toward more conservative range positioning.",
+    "rangeWidth": "AI-recommended percentage width (±) for the liquidity position. Wider in high-volatility periods, narrower when the market is calm.",
+    "confidence": "LightGBM model confidence in the current recommendation (0–100%). Higher confidence means stronger historical pattern support for the generated parameters."
+  },
+  "rangeOptimizer": {
+    "card": "Distributes capital across three strategic ranges — Core (concentrated fees), Defensive (wide safety net), and Opportunistic (ultra-tight for maximum yield).",
+    "core": "Primary liquidity range (±6%). Holds ~60% of capital. Optimized for maximum fee capture during normal daily price movement.",
+    "defensive": "Wide safety range (±20%). Acts as a buffer during extreme volatility to ensure the vault continues earning fees even during sharp price swings.",
+    "opportunistic": "Ultra-tight range (±2%) around the current price. Maximizes fee yield during low-volatility periods. Small allocation to keep rebalancing costs manageable."
+  },
+  "executionEngine": {
+    "card": "Manages on-chain Uniswap V3 positions — opens, rebalances, and collects fees automatically based on AI signals.",
+    "activePositions": "Currently open Uniswap V3 liquidity positions. Green dot = in-range (actively earning fees). Red dot = out-of-range (price moved outside position bounds).",
+    "recentExecutions": "Log of recent automated actions: rebalance operations, fee collections, and position adjustments executed by the keeper bot.",
+    "collectFees": "Collect accumulated trading fees from this Uniswap V3 position. Collected fees are added to the vault and increase the vAI share price.",
+    "openPosition": "Open a new Uniswap V3 liquidity position using the AI-calculated optimal range based on current market volatility and confidence."
+  },
+  "vaultHistory": {
+    "card": "On-chain record of your deposits and withdrawals from the ERC-4626 vault, fetched directly from Arbitrum blockchain events.",
+    "vaiShares": "Vault shares (vAI) issued when depositing USDC. As the vault earns trading fees, the share price increases — the same number of shares becomes worth more USDC over time.",
+    "blockNumber": "Arbitrum block number when this transaction was confirmed on-chain. Click the external link icon to view the full transaction on the block explorer."
+  },
+  "vaultManager": {
+    "card": "ERC-4626 tokenized vault on Arbitrum. Deposits are converted to vAI shares. The vault automatically provides liquidity on Uniswap V3, generating trading fees that increase the share price.",
+    "totalAssets": "Total USDC value locked in the vault on-chain, including all active Uniswap V3 liquidity positions and any idle USDC buffer.",
+    "sharePrice": "Current price of one vAI share in USDC. Starts at $1.00 and increases as the vault earns trading fees. Your profit = (current price - entry price) × shares held.",
+    "yourPosition": "Your current position value in USDC, calculated as your vAI shares × current share price.",
+    "walletUsdc": "Your USDC balance in the connected wallet, available to deposit into the vault.",
+    "deposit": "Deposit USDC to receive vAI shares. Requires two wallet confirmations: first approve USDC spending, then confirm the deposit transaction.",
+    "withdraw": "Redeem (burn) your vAI shares to receive back USDC at the current share price. No lock-up period.",
+    "fees": "Management fee: charged annually on total assets. Performance fee: charged on profits above the high-water mark. Both fees accrue to the protocol treasury."
+  },
+  "strategyController": {
+    "card": "Orchestrates the full automation cycle: data collection → AI inference → range optimization → on-chain execution. Runs automatically every 15 minutes via keeper bot.",
+    "cycleInterval": "How often the keeper bot automatically runs a full strategy cycle — fetching market data, running AI inference, and executing rebalances if needed.",
+    "nextRun": "Estimated time until the keeper bot starts the next automated strategy cycle.",
+    "runCycle": "Manually trigger a strategy cycle: fetches live market data from The Graph, runs LightGBM inference, and updates range parameters in real time.",
+    "rebalance": "Send an immediate rebalance signal to the keeper bot to execute on-chain position adjustments using the latest AI-calculated parameters."
+  },
+  "riskDashboard": {
+    "card": "Monitors risk metrics and market regime — impermanent loss, drawdown, Sharpe ratio, VaR, and the rebalancing threshold score.",
+    "marketRegime": "Current market regime detected by the AI. Determines strategy posture: Trend (follow momentum), Range (mean-reversion fees), High-Vol (widen positions), Low-Vol (concentrate for yield).",
+    "trend": "Trend strength indicator (0–100%). High values indicate strong directional momentum, favoring wider ranges and directional positioning.",
+    "vol": "Current volatility level relative to historical average. High values trigger wider liquidity ranges and more defensive capital allocation.",
+    "volume": "Current trading volume relative to historical average. High volume indicates an active market with higher fee generation potential.",
+    "rebalanceScore": "Composite score measuring how far the current position is from optimal. When it exceeds the threshold (default 0.65), the keeper bot triggers an automatic rebalance."
+  }
+}
