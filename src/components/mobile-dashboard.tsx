@@ -11,6 +11,7 @@ import {
 import { WalletConnect, ACTIVE_CHAIN_ID } from '@/components/wallet-connect';
 import { CardInfo } from '@/components/card-info';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { GovernanceGateInvestor } from '@/components/governance-gate-investor';
 import { useVaultHistory } from '@/hooks/use-vault-history';
 import { useLiquidityStore } from '@/lib/liquidity-store';
 import { useI18n } from '@/contexts/i18n-context';
@@ -142,6 +143,9 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
           <span>Rede <span className="text-amber-400">{NETWORK_LABEL}</span></span>
         </div>
       </div>
+
+      {/* Governance Gate - KPIs + GO/NO-GO */}
+      <GovernanceGateInvestor vaultAssetsUsd={totalAssets} userAssetsUsd={userUsd} />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3">
