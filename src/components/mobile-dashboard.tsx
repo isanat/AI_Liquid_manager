@@ -89,13 +89,13 @@ function PortfolioTab({ onDeposit, onWithdraw }: { onDeposit: () => void; onWith
             <div className="p-1 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500">
               <Droplets className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="font-bold text-sm">Como funciona?</span>
+            <span className="font-bold text-sm">{t('common.howItWorks')}</span>
           </div>
           <div className="flex flex-col gap-2 mb-3">
             {[
-              { icon: Wallet, color: 'text-emerald-400', text: 'Deposite USDC no vault' },
-              { icon: Brain,  color: 'text-cyan-400',    text: 'IA rebalanceia a cada 15 min na Uniswap V3' },
-              { icon: TrendingUp, color: 'text-violet-400', text: 'Retire USDC + rendimento a qualquer hora' },
+              { icon: Wallet, color: 'text-emerald-400', text: t('common.depositStep') + ': ' + t('common.depositStepDesc') },
+              { icon: Brain,  color: 'text-cyan-400',    text: t('aiStep') + ': ' + t('aiStepDesc') },
+              { icon: TrendingUp, color: 'text-violet-400', text: t('receiveStep') + ': ' + t('receiveStepDesc') },
             ].map(({ icon: Icon, color, text }) => (
               <div key={text} className="flex items-center gap-2 text-xs text-zinc-300">
                 <Icon className={cn('h-3.5 w-3.5 shrink-0', color)} />

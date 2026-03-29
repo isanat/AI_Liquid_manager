@@ -75,6 +75,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { CardInfo } from '@/components/card-info';
 import { useI18n } from '@/contexts/i18n-context';
 import { DualVaultSummary } from '@/components/dual-vault-summary';
+import { GovernanceGateTechnical } from '@/components/governance-gate-technical';
 
 // Derive network label and explorer from ACTIVE_CHAIN_ID (set via NEXT_PUBLIC_CHAIN_ID)
 const NETWORK_LABEL   = ACTIVE_CHAIN_ID === 421614 ? 'Arbitrum Sepolia' : 'Arbitrum One';
@@ -1755,30 +1756,32 @@ export default function LiquidityManagerDashboard() {
           </div>
         </section>
 
-        {/* ── Vault + History section ────────────────────────────────────────── */}
+        {/* ── Vault + AI + Execution - Grid Layout ─────────────────────────────── */}
         <section id="vault" className="scroll-mt-20">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column */}
-            <div className="space-y-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            
+            {/* Left Column - Vault Operations (4 cols) */}
+            <div className="xl:col-span-4 space-y-6">
               <VaultManager />
+              <GovernanceGateTechnical />
               <div id="history" className="scroll-mt-20">
                 <TransactionHistory />
               </div>
+            </div>
+
+            {/* Center Column - AI Strategy (4 cols) */}
+            <div className="xl:col-span-4 space-y-6">
+              <AIStrategyEngine />
+              <RangeOptimizer />
               <div id="strategy" className="scroll-mt-20">
                 <StrategyController />
               </div>
             </div>
 
-            {/* Center Column */}
-            <div className="space-y-6">
-              <AIStrategyEngine />
-              <RangeOptimizer />
-            </div>
-
-            {/* Right Column */}
-            <div id="system" className="space-y-6 scroll-mt-20">
-              <ExecutionEngine />
+            {/* Right Column - Risk & Execution (4 cols) */}
+            <div className="xl:col-span-4 space-y-6" id="system">
               <RiskDashboard />
+              <ExecutionEngine />
             </div>
           </div>
         </section>
