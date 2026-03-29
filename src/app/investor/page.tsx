@@ -148,6 +148,12 @@ export default function InvestorPage() {
   const vaultAssets = vaultState ? parseFloat(vaultState.totalAssetsUsd) : 0;
   const sharePrice = vaultState ? parseFloat(vaultState.sharePriceUsd) : 1;
 
+  // TVL distribution
+  const usdcTVL = usdcVaultState ? parseFloat(usdcVaultState.totalAssetsUsd) : 0;
+  const usdtTVL = usdtVaultState ? parseFloat(usdtVaultState.totalAssetsUsd) : 0;
+  const usdcShare = totalTVL > 0 ? (usdcTVL / totalTVL * 100) : 50;
+  const usdtShare = 100 - usdcShare;
+
   const handleDeposit = async () => {
     if (!walletClient || !address || !publicClient) {
       toast({ title: 'Conecta a carteira primeiro', variant: 'destructive' });
@@ -267,15 +273,35 @@ export default function InvestorPage() {
           </div>
         )}
 
-        {/* TVL Card */}
+        {/* Combined TVL Card */}
         <div className="rounded-2xl bg-gradient-to-br from-emerald-500/15 to-cyan-500/10 border border-emerald-500/20 p-5">
           <div className="flex items-center gap-2 mb-1">
             <Coins className="h-4 w-4 text-emerald-400" />
-            <p className="text-sm text-zinc-400">Total Value Locked</p>
+            <p className="text-sm text-zinc-400">Total Value Locked (Both Vaults)</p>
           </div>
           <p className="text-4xl font-bold tracking-tight">
             ${totalTVL.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </p>
+          
+          {/* TVL Distribution Bar */}
+          <div className="mt-3 space-y-2">
+            <div className="flex h-2 rounded-full overflow-hidden bg-muted">
+              <div className="bg-blue-500 transition-all duration-500" style={{ width: `${usdcShare}%` }} />
+              <div className="bg-green-500 transition-all duration-500" style={{ width: `${usdtShare}%` }} />
+            </div>
+            <div className="flex justify-between text-xs text-zinc-500">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                USDC: ${usdcTVL.toLocaleString('en-US', { maximumFractionDigits: 0 })} ({usdcShare.toFixed(0)}%)
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500" />
+                USDT: ${usdtTVL.toLocaleString('en-US', { maximumFractionDigits: 0 })} ({usdtShare.toFixed(0)}%)
+              </span>
+            </div>
+          </div>
+
+          {/* User Total Position */}
           {isConnected && userTotalPosition > 0 && (
             <div className="mt-3 pt-3 border-t border-white/5">
               <p className="text-xs text-zinc-500">Your Total Position</p>
@@ -294,6 +320,23 @@ export default function InvestorPage() {
 
         {/* Selected Vault Info */}
         <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                'w-3 h-3 rounded-full',
+                selectedAsset === 'USDC' ? 'bg-blue-500' : 'bg-green-500'
+              )} />
+              <p className="text-sm font-medium text-zinc-200">{selectedAsset} Vault</p>
+            </div>
+            <span className={cn(
+              'text-xs px-2.5 py-1 rounded-full font-medium border',
+              vaultState && !vaultState.paused && vaultAddress
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+            )}>
+              {vaultState && !vaultState.paused && vaultAddress ? '● Live' : vaultAddress ? '⏸ Paused' : '— Not Deployed'}
+            </span>
+          </div>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-xs text-zinc-500">TVL {selectedAsset}</p>
