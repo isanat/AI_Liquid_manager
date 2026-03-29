@@ -75,7 +75,6 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { CardInfo } from '@/components/card-info';
 import { useI18n } from '@/contexts/i18n-context';
 import { DualVaultSummary } from '@/components/dual-vault-summary';
-import { GovernanceGateTechnical } from '@/components/governance-gate-technical';
 
 // Derive network label and explorer from ACTIVE_CHAIN_ID (set via NEXT_PUBLIC_CHAIN_ID)
 const NETWORK_LABEL   = ACTIVE_CHAIN_ID === 421614 ? 'Arbitrum Sepolia' : 'Arbitrum One';
@@ -1763,7 +1762,6 @@ export default function LiquidityManagerDashboard() {
             {/* Left Column - Vault Operations (4 cols) */}
             <div className="xl:col-span-4 space-y-6">
               <VaultManager />
-              <GovernanceGateTechnical />
               <div id="history" className="scroll-mt-20">
                 <TransactionHistory />
               </div>
